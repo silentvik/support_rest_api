@@ -1,4 +1,4 @@
-# support_rest_api
+# Support REST API
 <b> Custom API for support service </b>
 <br><br>
 Simple usage:
