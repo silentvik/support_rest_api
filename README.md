@@ -7,3 +7,9 @@ Simple usage:
 3. pip install -r app/requirements.txt
 4. docker-compose up -d --build
 
+ <b>Features</b> <br>
+    comming soon...
+  
+<b>Endpoints</b> <br>
+    comming soon...
+  
