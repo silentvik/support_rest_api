@@ -2,7 +2,7 @@
 from time import sleep
 
 import pytest
-from app_support.tasks import create_user, delete_user
+from app_support.tasks import create_user_test, delete_user_test
 from django.contrib.auth import get_user_model
 
 from .services import TestMixin
@@ -17,10 +17,10 @@ class TestCelery(TestMixin):
 
     def test_celery_is_working(self):
         starting_users_count = User.objects.count()
-        self.create_tmp_users(self.manipulated_items_count, celery_task=create_user)
+        self.create_tmp_users(self.manipulated_items_count, celery_task=create_user_test)
         sleep(self.wait_for_celery_sec)
         assert User.objects.count() == starting_users_count + self.manipulated_items_count
         assert len(self.users) == self.manipulated_items_count
-        self.delete_tmp_users(celery_task=delete_user)
+        self.delete_tmp_users(celery_task=delete_user_test)
         sleep(self.wait_for_celery_sec)
         assert User.objects.count() == starting_users_count

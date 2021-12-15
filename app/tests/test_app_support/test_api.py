@@ -89,6 +89,7 @@ class TestApiGET:
             expected_res = expected_results_matrix[i][j]
             assert res == expected_res
 
+    # perhaps it will be completed
     def test_user_profile(self, create_user, api_client):
         pass
 
