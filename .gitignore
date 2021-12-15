@@ -1,0 +1,5 @@
+venv/
+buffer_sqlite/
+requirements1.txt
+debug.log
+app/app_support/trash/
