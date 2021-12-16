@@ -1,11 +1,19 @@
 # Support REST API
-<b> Custom API for support service </b>
+<b> Custom API for support service. (Pet project) </b>
 <br><br>
-Simple usage:
-1. cd support_rest_api
-2. source your/venv
-3. pip install -r app/requirements.txt
-4. docker-compose up -d --build
+I'm creating this project just to practice.
+<br>
+Used:
+<br>
+[Django]  [django-rest-framework]  [Docker]  [postgresSQL]  [simpleJWT] [PyTest]
+
+<br><br>
+Usage:
+1. git clone https://github.com/silentvik/support_rest_api.git
+2. cd support_rest_api
+3. source your/venv/activate
+4. pip install -r app/requirements.txt
+5. docker-compose up -d --build
 
  <b>Features</b> <br>
     comming soon...
