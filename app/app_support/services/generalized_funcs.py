@@ -97,3 +97,13 @@ def merged(obj_to_expand, expanding_obj):
         if item not in expanded_obj:
             expanded_obj.append(item)
     return expanded_obj
+
+
+def popped_dict(dictionary, keys_list):
+    """
+        Softly pop all items in [keys_list] from [dictionary]
+        Return popped dictionary (new)
+    """
+    dictionary_copy = deepcopy(dictionary)
+    [dictionary_copy.pop(key, None) for key in keys_list]
+    return dictionary_copy

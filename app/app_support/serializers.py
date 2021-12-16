@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
+from django.utils import timezone
 from rest_framework import serializers
 
 from app_support import serializers_fields
@@ -17,20 +18,21 @@ User = get_user_model()
 # basic serializers:
 
 
-class BasicTicketsSerializer(serializers.ModelSerializer, SerializerAdditionalMethodsMixin):
+class BasicTicketSerializer(serializers.ModelSerializer, SerializerAdditionalMethodsMixin):
     message = serializers.CharField(write_only=True)
-    ticket_theme = serializers_fields.AppChoiceField(choices=TICKET_THEMES,)
-    owner_id = serializers.CharField(source='opened_by.id', read_only=True)
+    ticket_theme = serializers_fields.AppChoiceField(choices=TICKET_THEMES)
+    opened_by_id = serializers.CharField(source='opened_by.id', read_only=True)
 
     class Meta:
         model = Ticket
         fields = [
             'id',
             'ticket_theme',
+            'opened_by_id',
+            'is_answered',
+            # 'last_answer_date_hidden',
             'is_closed',
-            'answered',
             'message',
-            'owner_id',
         ]
 
     # def validate_ticket_theme(self, ticket_theme_data):
@@ -79,7 +81,7 @@ class BasicUserListSerializer(serializers.ModelSerializer, SerializerAdditionalM
             'screen_name',
             'pretty_creation_date',
             'actual_tickets_count',
-            'max_unanswered_time'
+            # 'max_unanswered_time'
         ]
 
     # def get_related_fields(self, inst, **kwargs):
@@ -87,7 +89,7 @@ class BasicUserListSerializer(serializers.ModelSerializer, SerializerAdditionalM
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
-        representation['max_unanswered_time'] = accurate_string_seconds(representation['max_unanswered_time'])
+        # representation['max_unanswered_time'] = accurate_string_seconds(representation['max_unanswered_time'])
         return representation
 
 
@@ -162,7 +164,7 @@ class BasicUserProfileSerializer(serializers.ModelSerializer, SerializerAddition
 
 
 class ExpandedUserListSerializer(BasicUserListSerializer):
-    tickets = BasicTicketsSerializer(many=True, read_only=True)
+    tickets = BasicTicketSerializer(many=True, read_only=True)
 
     class Meta(BasicUserListSerializer.Meta):
         fields = merged(BasicUserListSerializer.Meta.fields, [
@@ -173,7 +175,7 @@ class ExpandedUserListSerializer(BasicUserListSerializer):
 
     def get_related_fields(self, inst, **kwargs):
         queryset = Ticket.objects.filter(opened_by=inst)
-        return BasicTicketsSerializer(queryset, many=True)
+        return BasicTicketSerializer(queryset, many=True)
 
 
 class DefaultUserProfileSerializer(BasicUserProfileSerializer):
@@ -220,24 +222,30 @@ class FullUserProfileSerializer(ExpandedUserProfileSerializer):
         fields = '__all__'
 
 
-class FullTicketSerializer(BasicTicketsSerializer):
+class FullTicketSerializer(BasicTicketSerializer):
     no_response_time = serializers_fields.SerializerMethodKwargsField(
         method_name='get_no_response_time',
         field_name='last_update',
     )
-    messages = BasicMessageSerializer(many=True, read_only=True)
-    message = serializers.CharField(write_only=True)
+
+    # message = serializers.CharField(write_only=True)
     opened_by = serializers.CharField(read_only=True)
+    messages = BasicMessageSerializer(many=True, read_only=True)
 
     class Meta:
         model = Ticket
         fields = '__all__'
 
 
-class UserTicketsSerializer(BasicTicketsSerializer):
+class DefaultTicketSerializer(BasicTicketSerializer):
     last_update = serializers_fields.SerializerMethodKwargsField(
         method_name='get_readable_date',
         field_name='last_update',
+        read_only=True,
+    )
+    creation_date = serializers_fields.SerializerMethodKwargsField(
+        method_name='get_readable_date',
+        field_name='creation_date',
         read_only=True,
     )
     no_response_time = serializers_fields.SerializerMethodKwargsField(
@@ -245,8 +253,9 @@ class UserTicketsSerializer(BasicTicketsSerializer):
         field_name='last_update',
     )
 
-    class Meta(BasicTicketsSerializer.Meta):
-        fields = merged(BasicTicketsSerializer.Meta.fields, [
+    class Meta(BasicTicketSerializer.Meta):
+        fields = merged(BasicTicketSerializer.Meta.fields, [
+            'creation_date',
             'no_response_time',
             'last_update'
         ])

@@ -47,6 +47,7 @@ class AdditionalViewMethodsMixin:
         )
 
     def set_serializer_mode(self):
+        # set mode works only w GET request yet
         mode = self.request.GET.get('mode', None)
         if mode:
             if mode in self.serializer_modes.keys():
@@ -67,3 +68,10 @@ class AdditionalViewMethodsMixin:
         if user.is_support:
             return 'Support'
         return 'User'
+
+    def chose_and_set_mode(self):
+        user = self.request.user
+        if user.is_staff or user.is_superuser:
+            self.set_serializer_mode()
+        elif user.is_support:
+            self.serializer_mode = 'expanded'

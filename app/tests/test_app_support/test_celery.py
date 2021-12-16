@@ -2,7 +2,7 @@
 from time import sleep
 
 import pytest
-from app_support.tasks import create_user_test, delete_user_test
+from app_support.celery_test_tasks import create_user_test, delete_user_test
 from django.contrib.auth import get_user_model
 
 from .services import TestMixin

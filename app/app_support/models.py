@@ -118,7 +118,7 @@ class AppUser(AbstractUser):
     def max_unanswered_time(self):
         # r = Ticket.objects.filter(opened_by=self).order_by('last_support_answer')
         # print(f'r = {r}')
-        res = Ticket.objects.filter(opened_by=self).aggregate(Min('last_support_answer'))['last_support_answer__min']
+        res = Ticket.objects.filter(opened_by=self).aggregate(Min('last_answer_date'))['last_answer_date__min']
         if res:
             delta = (timezone.now()-res).total_seconds()
         else:
@@ -141,36 +141,41 @@ class Ticket(models.Model):
         related_name="tickets",
         related_query_name="ticket",
     )
-
     creation_date = models.DateTimeField(default=timezone.now, editable=False)
     last_update = models.DateTimeField(auto_now_add=True)
-    last_support_answer = models.DateTimeField(default=timezone.now)
+
+    is_answered = models.BooleanField(default=False)
+    last_answer_date = models.DateTimeField(default=timezone.now)
+
+    is_frozen = models.BooleanField(default=False)  # True = ticket is frozen
     is_closed = models.BooleanField(default=False)
     was_closed_by = models.CharField(
         max_length=250,
         blank=True
     )
-    is_frozen = models.BooleanField(default=False)  # True = ticket is frozen
-    # answered_by = models.CharField(default='admin', max_length=250)
     staff_note = models.TextField(max_length=10000, blank=True, default='')
-    answered = models.BooleanField(default=True)
     # messages_count = models.PositiveIntegerField(default=0, editable=False)
 
     class Meta:
-        ordering = ['id', 'last_support_answer', 'creation_date', 'is_closed', 'answered']  # , 'is_opened'
+        ordering = ['id', 'ticket_theme', 'creation_date', 'last_update', 'is_answered', 'last_answer_date']  # , 'is_opened'
 
+    # this field must be in serializer I think
     @property
     def not_answered_time(self):
-        return accurate_string_seconds(int((timezone.now() - self.last_support_answer).total_seconds()))
+        if self.is_answered is False:
+            return accurate_string_seconds(int((timezone.now() - self.last_support_answer).total_seconds()))
+        return accurate_string_seconds(0)
 
     def save(self, *args, **kwargs):
+        self.last_update = timezone.now()  # update 'last_update' field
         super().save(*args, **kwargs)  # call the actual save method
-        self.last_update = timezone.now()
 
 
 class Message(models.Model):
+    related_class = Ticket
+
     linked_ticket = models.ForeignKey(
-        Ticket,
+        related_class,
         on_delete=models.CASCADE,
         related_name="messages",
         related_query_name="message",
@@ -188,3 +193,11 @@ class Message(models.Model):
             f' (written_by={self.linked_user.username})'
             f' body= {self.body[:40]}'
         )
+
+    def save(self, *args, **kwargs):
+        if self.linked_user.is_support:
+            self.linked_ticket.is_answered = True
+            self.linked_ticket.last_answer = models.DateTimeField(default=timezone.now)
+        else:
+            self.linked_ticket.is_answered = False
+        super().save(*args, **kwargs)  # call the actual save method

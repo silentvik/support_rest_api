@@ -9,11 +9,12 @@ from rest_framework.response import Response
 
 from app_support.models import Message, Ticket
 from app_support.serializers import (  # UserTicketsSerializer,; UserMessageSerializer,
-    BasicMessageSerializer, BasicTicketsSerializer, BasicUserListSerializer,
-    DefaultUserProfileSerializer, ExpandedUserListSerializer,
-    ExpandedUserProfileSerializer, FullTicketSerializer,
-    FullUserProfileSerializer)
+    BasicMessageSerializer, BasicTicketSerializer, BasicUserListSerializer,
+    DefaultTicketSerializer, DefaultUserProfileSerializer,
+    ExpandedUserListSerializer, ExpandedUserProfileSerializer,
+    FullTicketSerializer, FullUserProfileSerializer)
 from app_support.services import views_info
+from app_support.services.generalized_funcs import popped_dict
 from app_support.views_mixins import AdditionalViewMethodsMixin
 from app_support.views_permissions import (  # IsIdOwnerOrSuperUser,
     IsIdOwnerOrSupportPlus, IsItemOwnerOrSupportPlus, MethodsPermissions)
@@ -92,13 +93,13 @@ class UserProfileView(generics.RetrieveUpdateDestroyAPIView, AdditionalViewMetho
     # defaults:
     # among these viewing modes, only the administrator can choose
     serializer_modes = {
-        'concise': DefaultUserProfileSerializer,  # for user
+        'default': DefaultUserProfileSerializer,  # for user
         'expanded': ExpandedUserProfileSerializer,  # for support
         'full': FullUserProfileSerializer,  # for staff+
     }
-    serializer_mode = 'concise'
+    serializer_mode = 'default'
 
-    def set_mode(self):
+    def chose_mode(self):
         user = self.request.user
         if user.is_staff or user.is_superuser:
             self.set_serializer_mode()
@@ -106,7 +107,7 @@ class UserProfileView(generics.RetrieveUpdateDestroyAPIView, AdditionalViewMetho
             self.serializer_mode = 'expanded'
 
     def get_object(self):
-        self.set_mode()
+        self.chose_mode()
         self.set_as_pk_in_kwargs(self.request.user.id)
         return super().get_object()
 
@@ -122,7 +123,7 @@ class UserProfileView(generics.RetrieveUpdateDestroyAPIView, AdditionalViewMetho
 class TicketsListView(generics.ListCreateAPIView, AdditionalViewMethodsMixin):
 
     # serializer_class = TicketDetailUserSerializer
-    serializer_class = FullTicketSerializer
+    # serializer_class = FullTicketSerializer
     permission_classes = (
         IsAuthenticated,
         IsIdOwnerOrSupportPlus,
@@ -130,21 +131,35 @@ class TicketsListView(generics.ListCreateAPIView, AdditionalViewMethodsMixin):
     queryset = Ticket.objects.all()
 
     # defaults:
-    list_ordering = ['id', 'answered', 'ticket_theme']
+    list_ordering = ['id', 'ticket_theme']
     list_limit = 10**6
     serializer_modes = {
-        'concise': BasicTicketsSerializer,
-        'full': FullTicketSerializer,
+        'basic': BasicTicketSerializer,  # view list
+        'default': DefaultTicketSerializer,  # view list/create
+        'full': FullTicketSerializer,  # view list/create
     }
-    serializer_mode = 'concise'
+    serializer_mode = 'basic'
     asked_user_id = None
+
+    def set_available_modes(self):
+        usertype = self.get_current_user_type()
+        if usertype in ['Support']:
+            self.serializer_modes = popped_dict(self.serializer_modes, [''])
+        else:
+            self.serializer_modes = popped_dict(self.serializer_modes, ['full', 'expanded'])
+        self.set_serializer_mode()
+
+    def set_default_mode(self):
+        if self.request.method == 'POST':
+            self.serializer_mode = 'default'
+        else:
+            self.serializer_mode = 'basic'
 
     def set_valid_kwargs(self):
         # AdditionalViewMethodsMixin helps here
         self.set_asked_user_id()
         self.set_list_limit()
         self.set_list_ordering()
-        self.set_serializer_mode()
 
     def filter_queryset(self, queryset):
         self.set_valid_kwargs()
@@ -159,6 +174,9 @@ class TicketsListView(generics.ListCreateAPIView, AdditionalViewMethodsMixin):
 
     def get_serializer_class(self):
         print('***TicketsListView.get_serializer_class')
+        self.set_default_mode()
+        self.set_available_modes()
+        self.set_serializer_mode()
         self.serializer_class = self.serializer_modes[self.serializer_mode]
         return super().get_serializer_class()
 
@@ -167,7 +185,7 @@ class TicketsListView(generics.ListCreateAPIView, AdditionalViewMethodsMixin):
 
 
 class TicketView(generics.RetrieveUpdateDestroyAPIView, AdditionalViewMethodsMixin):
-    serializer_class = FullTicketSerializer
+    # serializer_class = DefaultTicketSerializer
     queryset = Ticket.objects.all()
     restricted_class = Ticket
     permission_classes = (
@@ -176,6 +194,33 @@ class TicketView(generics.RetrieveUpdateDestroyAPIView, AdditionalViewMethodsMix
         IsItemOwnerOrSupportPlus,
     )
     lookup_url_kwarg = 'ticket_id'
+
+    serializer_modes = {
+        'basic': BasicTicketSerializer,
+        'default': DefaultTicketSerializer,
+        'full': FullTicketSerializer,
+    }
+    serializer_mode = 'default'
+
+    def set_available_modes(self):
+        usertype = self.get_current_user_type()
+        if usertype in ['Support']:
+            self.serializer_modes = popped_dict(self.serializer_modes, [''])
+        else:
+            self.serializer_modes = popped_dict(self.serializer_modes, ['full', 'expanded'])
+
+    def set_default_mode(self):
+        usertype = self.get_current_user_type()
+        if usertype in ['Superuser', 'Staff', 'Support']:
+            self.serializer_mode = 'full'
+
+    def get_serializer_class(self):
+        print('***TicketView.get_serializer_class')
+        self.set_default_mode()
+        self.set_available_modes()
+        self.set_serializer_mode()
+        self.serializer_class = self.serializer_modes[self.serializer_mode]
+        return super().get_serializer_class()
 
 
 class MessagesView(generics.ListCreateAPIView, AdditionalViewMethodsMixin):
@@ -208,7 +253,7 @@ class MessageView(generics.RetrieveUpdateDestroyAPIView, AdditionalViewMethodsMi
     queryset = Message.objects.all()
 
 
-@api_view(['GET', 'PATCH', 'PUT', 'DELETE'])
+@api_view(['GET', 'POST', 'PATCH', 'PUT', 'DELETE'])
 def error404_view(request, some_path=''):
     requested_path = request.path
     data = f'path {requested_path} does not exists.'

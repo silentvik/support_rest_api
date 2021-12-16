@@ -28,7 +28,7 @@ class SerializerAdditionalMethodsMixin:
         return accurate_string_seconds(int(delta.total_seconds()))
 
     def get_actual_tickets_count(self, object):
-        res = Ticket.objects.filter(opened_by=object, answered=False, is_closed=False).count()
+        res = Ticket.objects.filter(opened_by=object, is_answered=False, is_closed=False).count()
         return res
 
     def get_count_of_related_objects(self, object, related_class=None):

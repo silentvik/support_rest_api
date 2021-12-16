@@ -93,7 +93,7 @@ class IsIdOwnerOrSupportPlus(BasePermission):
             raise exceptions.PermissionDenied(
                 'Permission denied. '
                 f'Current user_id = {request.user.id}. '
-                f'Use user_id to get list of items or try another request method.'
+                f'Use "?user_id={request.user.id}" to get list of items or try another request method.'
             )
         return False
 
