@@ -10,11 +10,15 @@ from app_support.services.generalized_funcs import (accurate_string_datetime,
 
 class SerializerAdditionalMethodsMixin:
 
-    def get_readable_date(self, object, field_name=None, **kwargs):
-        if field_name:
-            date = getattr(object, field_name)
+    def get_readable_date(self, object, field_name):
+        date = getattr(object, field_name)
+        if date:
             return accurate_string_datetime(date)
-        return accurate_string_datetime(object.creation_date)
+        return None
+
+    def readable_time_seconds(self, object, field_name):
+        seconds = getattr(object, field_name)
+        return accurate_string_seconds(seconds)
 
     def opened_by_who(self, object):
         return f'{object.opened_by}'

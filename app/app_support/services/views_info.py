@@ -1,6 +1,6 @@
 # only simple info here
 
-USERS_VIEW_INFO = {
+USERS_PAGE_INFO = {
     'Allowed methods info': {
         'GET': {
             'Info page': 'for non-support users',
@@ -16,3 +16,31 @@ USERS_VIEW_INFO = {
         },
     }
 }
+
+ROOT_PAGE_INFO = {
+        'Endpoints': {
+            'obtainjwt/': {
+                'methods': {
+                    'POST': 'create access and refresh tokens'
+                }
+            },
+            'refreshjwt/': {
+                'methods': {
+                    'POST': 'create new access token',
+                }
+            },
+            'users/': {
+                'methods': {
+                    'GET': 'view users list (auth support+). Args: [mode, filter, order]',
+                    'POST': 'create access and refresh tokens',
+                }
+            },
+            'users/<int>/': {
+                'methods': {
+                    'GET': 'view users list (auth support+)',
+                    'POST': 'create access and refresh tokens',
+                }
+            },
+            'tickets/': 'to view tickets (if have credentials for) or create new',
+        }
+    }

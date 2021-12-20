@@ -72,13 +72,6 @@ class TestMixin:
     default_password = 'testtest'
     default_email = '@aa.aa'
     users = {}
-    USER_TYPE_ARGS_PACK = {
-        'Admin': (True, True, True, True),
-        'Staff': (False, True, True, True),
-        'Support': (False, False, True, True),
-        'User': (False, False, False, True),
-        'Anonimous': (False, False, False, False),
-    }
 
     def create_tmp_users(self, count_to_create=3, celery_task=None):
         total_written = 0

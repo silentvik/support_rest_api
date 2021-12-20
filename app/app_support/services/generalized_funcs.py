@@ -41,10 +41,34 @@ def accurate_string_seconds(seconds):
     result = (
         f"{str(days)+' day(s) ' if days else ''}"
         f"{str(hours)+' hour(s) ' if hours else ''}"
-        f"{str(minutes)+' minute(s)' if minutes and not days else ''}"
+        f"{str(minutes)+' minute(s) ' if minutes and not days else ''}"
         f"{str(seconds)+' second(s)' if not days and not hours else ''}"
     )
+    if result[-1] == ' ':
+        result = result[:-1]
     return result
+
+
+def merged(obj_to_expand, expanding_obj):
+    """
+        merge two lists
+    """
+    expanded_obj = deepcopy(obj_to_expand)
+    for item in expanding_obj:
+        if item in expanded_obj:
+            expanded_obj.remove(item)
+        expanded_obj.append(item)
+    return expanded_obj
+
+
+def popped_dict(dictionary, keys_list):
+    """
+        Softly pop all items in [keys_list] from [dictionary]
+        Return popped dictionary (new)
+    """
+    dictionary_copy = deepcopy(dictionary)
+    [dictionary_copy.pop(key, None) for key in keys_list]
+    return dictionary_copy
 
 
 def find_a_match(subject, collection, default):
@@ -63,22 +87,6 @@ def find_a_match(subject, collection, default):
     return default
 
 
-def try_found_in_collection(subject, collection, default):
-    """
-        [summary]
-            Find an item from collection which is nearest to subject,
-
-        Args:
-            subject ([type]): [str]
-            collection ([type]): [iterable tuples of strings like ('2','item')]
-            default ([type]): [any]
-
-        Returns:
-            [str]: [nearest item[0]]
-    """
-    return '1'
-
-
 def extended(obj_to_expand, expanding_obj):
     """
         return [list]
@@ -86,24 +94,3 @@ def extended(obj_to_expand, expanding_obj):
     res = list(obj_to_expand)
     res.extend(list(expanding_obj))
     return res
-
-
-def merged(obj_to_expand, expanding_obj):
-    """
-        merge two lists
-    """
-    expanded_obj = deepcopy(obj_to_expand)
-    for item in expanding_obj:
-        if item not in expanded_obj:
-            expanded_obj.append(item)
-    return expanded_obj
-
-
-def popped_dict(dictionary, keys_list):
-    """
-        Softly pop all items in [keys_list] from [dictionary]
-        Return popped dictionary (new)
-    """
-    dictionary_copy = deepcopy(dictionary)
-    [dictionary_copy.pop(key, None) for key in keys_list]
-    return dictionary_copy

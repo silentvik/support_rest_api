@@ -1,60 +1,19 @@
 # from datetime import datetime
 from django.conf import settings
-from django.contrib.auth.models import (  # AbstractBaseUser,; BaseUserManager,; PermissionsMixin,
-    AbstractUser, BaseUserManager, User)
+from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
-from django.db.models import Min  # Max,
+from django.db.models import Min  # , Max, Q
 from django.utils import timezone
 # from django.utils.translation import ugettext_lazy as _
 from django.utils.translation import gettext_lazy as _
 
-from app_support.services.generalized_funcs import \
-    accurate_string_seconds  # accurate_string_datetime,
-
-# from django.contrib.auth.hashers import make_password
-
-#
-CONFIG = {
-    'NAME_OF_TC': 'tickets_collector',
-    'TICKET_THEMES': (
-        (1, 'product'),
-        (2, 'soft'),
-        (3, 'security'),
-        (4, 'any other'),
-    ),
-    'WRITTEN_BY': (
-        (1, 'user'),
-        (2, 'support'),
-        (3, 'admin'),
-    )
-}
-# TICKET_THEMES = CONFIG['TICKET_THEMES']
-
-
-def get_current_tc_user_object():
-    """
-    returns an user-object,
-    which collects all tickets for deleted users.
-    """
-
-    user_object = User.objects.get_or_create(
-        username=CONFIG['NAME_OF_TC']
-    )[0]
-    return user_object
-
-
-TICKET_THEMES = (
-        ('1', 'product'),
-        ('2', 'soft'),
-        ('3', 'security'),
-        ('4', 'other'),
-)
+from app_support import models_const
 
 
 class AppUserManager(BaseUserManager):
     """
-    Custom user model manager where email is the unique identifiers
-    for authentication instead of usernames.
+        Custom user model manager where email is the unique identifiers
+        for authentication instead of usernames.
     """
     def create_user(self, email, password, **extra_fields):
         """
@@ -70,7 +29,7 @@ class AppUserManager(BaseUserManager):
 
     def create_superuser(self, email, password, **extra_fields):
         """
-        Create and save a SuperUser with the given email and password.
+            Create and save a SuperUser with the given email and password.
         """
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
@@ -90,16 +49,50 @@ class AppUser(AbstractUser):
     REQUIRED_FIELDS = ['username']
     date_joined = models.DateTimeField(default=timezone.now)
     is_support = models.BooleanField(default=False)
-    last_update = models.DateTimeField(auto_now_add=True)
+    last_changes = models.DateTimeField(auto_now_add=True)
     hide_private_info = models.BooleanField(default=False)
     screen_name = models.CharField(max_length=250, blank=True)
     personal_information = models.TextField(max_length=2000, blank=True)
-
-    opened_tickets_count = models.IntegerField(default=0)
-    last_answer_date = models.DateTimeField(default=timezone.now)
+    current_opened_tickets_count = models.IntegerField(default=0, editable=False, name='opened_tickets_count')
+    earliest_unanswered_ticket_question_date = models.DateTimeField(blank=True, null=True, name='unanswered_since')
+    tickets_messages = models.IntegerField(default=0, editable=False)
     objects = AppUserManager()
 
+    class Meta:
+        ordering = ['unanswered_since', 'id']  # , 'is_opened'
+
     @property
+    def max_not_answered_seconds(self):
+        delta = 0
+        if self.unanswered_since:
+            delta = (timezone.now() - self.unanswered_since).total_seconds()
+        return delta
+
+    def save(self, *args, **kwargs):
+        self.last_changes = timezone.now()
+        super().save(*args, **kwargs)  # call the actual save method
+
+    def __str__(self):
+        return self.get_screen_name()
+
+    def update_user_fields(self):
+        self.tickets_messages = self.messages.count()
+        self.current_opened_tickets_count = self.tickets.filter(is_closed=False).count()
+        unanswered_since = (
+            self.tickets.exclude(
+                user_question_date=None
+                ).filter(
+                    is_answered=False
+                ).aggregate(
+                    Min('user_question_date')
+                )['user_question_date__min']
+        )
+        if unanswered_since:
+            self.unanswered_since = unanswered_since
+        else:
+            self.unanswered_since = None
+        self.save()
+
     def get_screen_name(self):
         tail = ''
         if self.is_staff:
@@ -111,64 +104,76 @@ class AppUser(AbstractUser):
         elif not self.hide_private_info:
             screen_name = self.username
         else:
-            screen_name = f'user#{self.id}'
+            screen_name = f'user (id #{self.id})'
         return screen_name+tail
 
-    @property
-    def max_unanswered_time(self):
-        # r = Ticket.objects.filter(opened_by=self).order_by('last_support_answer')
-        # print(f'r = {r}')
-        res = Ticket.objects.filter(opened_by=self).aggregate(Min('last_answer_date'))['last_answer_date__min']
-        if res:
-            delta = (timezone.now()-res).total_seconds()
-        else:
-            delta = 0
-        return delta
 
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)  # call the actual save method
-        self.last_update = timezone.now()
+def get_current_tc_user_object(username):
+    """
+    returns an user-object,
+    which collects all tickets for deleted users.
+    """
+    user_object = AppUser.objects.get_or_create(
+        username=username
+    )[0]
+    return user_object
 
 
 class Ticket(models.Model):
     ticket_theme = models.CharField(
         max_length=255,
-        choices=TICKET_THEMES,
+        choices=models_const.TICKET_THEMES,
     )
     opened_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.SET(get_current_tc_user_object),
+        on_delete=models.SET(get_current_tc_user_object(models_const.NAME_OF_TC)),
         related_name="tickets",
         related_query_name="ticket",
     )
+    answerer_id = models.PositiveIntegerField(blank=True, null=True, editable=False)
     creation_date = models.DateTimeField(default=timezone.now, editable=False)
-    last_update = models.DateTimeField(auto_now_add=True)
-
-    is_answered = models.BooleanField(default=False)
-    last_answer_date = models.DateTimeField(default=timezone.now)
-
     is_frozen = models.BooleanField(default=False)  # True = ticket is frozen
     is_closed = models.BooleanField(default=False)
-    was_closed_by = models.CharField(
-        max_length=250,
-        blank=True
-    )
     staff_note = models.TextField(max_length=10000, blank=True, default='')
-    # messages_count = models.PositiveIntegerField(default=0, editable=False)
+
+    # the following fields will be monitored automatically by save() and other methods
+    last_changes = models.DateTimeField(auto_now_add=True)
+    is_answered = models.BooleanField(default=False)
+    user_question_date = models.DateTimeField(blank=True, null=True, editable=False)
+    closed_by_id = models.PositiveIntegerField(blank=True, null=True, editable=False)
+    messages_count = models.PositiveIntegerField(default=0, editable=False)
 
     class Meta:
-        ordering = ['id', 'ticket_theme', 'creation_date', 'last_update', 'is_answered', 'last_answer_date']  # , 'is_opened'
+        ordering = ['id', 'ticket_theme', 'user_question_date', 'last_changes', 'is_answered']  # , 'is_opened'
 
-    # this field must be in serializer I think
     @property
     def not_answered_time(self):
-        if self.is_answered is False:
-            return accurate_string_seconds(int((timezone.now() - self.last_support_answer).total_seconds()))
-        return accurate_string_seconds(0)
+        if self.is_answered is False and self.user_question_date:
+            return int((timezone.now() - self.user_question_date).total_seconds())
+        return 0
 
     def save(self, *args, **kwargs):
-        self.last_update = timezone.now()  # update 'last_update' field
+        self.last_changes = timezone.now()  # update 'last_update' field
         super().save(*args, **kwargs)  # call the actual save method
+        self.opened_by.update_user_fields()
+
+    def delete(self, *args, **kwargs):
+        user = self.opened_by
+        res = super().delete(*args, **kwargs)
+        user.update_user_fields()
+        return res
+
+    def update_related_ticket_fields(self, message_owner=None):
+        self.messages_count = self.messages.count()
+        if message_owner:
+            if message_owner.id == self.opened_by.id:
+                self.user_question_date = timezone.now()
+                self.is_answered = False
+            else:
+                self.is_answered = True
+                self.answerer_id = message_owner.id
+                self.user_question_date = None
+        self.save()
 
 
 class Message(models.Model):
@@ -182,10 +187,27 @@ class Message(models.Model):
     )
     linked_user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.SET(get_current_tc_user_object)
+        on_delete=models.SET(get_current_tc_user_object),
+        related_name="messages",
+        related_query_name="message",
     )
     body = models.TextField(max_length=1000, default='')
     creation_date = models.DateTimeField(default=timezone.now, editable=False)
+
+    class Meta:
+        ordering = ['id']
+
+    def save(self, *args, **kwargs):
+        res = super().save(*args, **kwargs)  # call the actual save method
+        self.linked_ticket.update_related_ticket_fields(message_owner=self.linked_user)
+        return res
+
+    def delete(self, *args, **kwargs):
+        ticket, user = self.linked_ticket, self.linked_user
+        res = super().delete(*args, **kwargs)
+        if ticket:  # If ticket was deleted?
+            ticket.update_related_ticket_fields(message_owner=user)
+        return res
 
     def __str__(self):
         return (
@@ -193,11 +215,3 @@ class Message(models.Model):
             f' (written_by={self.linked_user.username})'
             f' body= {self.body[:40]}'
         )
-
-    def save(self, *args, **kwargs):
-        if self.linked_user.is_support:
-            self.linked_ticket.is_answered = True
-            self.linked_ticket.last_answer = models.DateTimeField(default=timezone.now)
-        else:
-            self.linked_ticket.is_answered = False
-        super().save(*args, **kwargs)  # call the actual save method

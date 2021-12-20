@@ -19,7 +19,7 @@ class TestPrepareDB(TestMixin):
 
     def test_db_write_delete(self):
         starting_users_count = User.objects.count()
-        self.create_tmp_users(3)
+        self.create_tmp_users(self.manipulated_items)
         assert User.objects.count() == starting_users_count + self.manipulated_items
         assert len(self.users) == self.manipulated_items
         self.delete_tmp_users()

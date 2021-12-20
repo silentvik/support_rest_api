@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'rest_framework_json_api',
     'rest_framework_simplejwt',  # If I wish to use localizations/translations
     'rest_framework.authtoken',  # unnecessary?
+    'django_filters',
     # 'djoser',
 
     'app_support.apps.AppSupportConfig',
@@ -169,23 +170,26 @@ REST_FRAMEWORK = {  # CFG rest_framework_json_api DOCs
         'rest_framework.parsers.JSONParser'  # added for tests (defaul content = multipart/form...)
     ),
     'DEFAULT_RENDERER_CLASSES': (
+
         'rest_framework_json_api.renderers.JSONRenderer',
+        'rest_framework_json_api.renderers.BrowsableAPIRenderer',
+        # 'rest_framework.renderers.JSONRenderer',  #
+        # 'rest_framework.renderers.StaticHTMLRenderer',  #
+
         #   If you're performance testing, you will want to use the browseable API
         #   without forms, as the forms can generate their own queries.
         #   If performance testing, enable:
         #   'example.utils.BrowsableAPIRendererWithoutForms',
         #   Otherwise, to play around with the browseable API, enable:
-        'rest_framework_json_api.renderers.BrowsableAPIRenderer',
-        'rest_framework.renderers.JSONRenderer',  # иначе вьюхи не работают под тестами
 
     ),
     'DEFAULT_METADATA_CLASS': 'rest_framework_json_api.metadata.JSONAPIMetadata',
     'DEFAULT_SCHEMA_CLASS': 'rest_framework_json_api.schemas.openapi.AutoSchema',
     'DEFAULT_FILTER_BACKENDS': (
         # 'rest_framework_json_api.filters.QueryParameterValidationFilter',
-        'rest_framework_json_api.filters.OrderingFilter',
+        # 'rest_framework_json_api.filters.OrderingFilter',
         'rest_framework_json_api.django_filters.DjangoFilterBackend',
-        'rest_framework.filters.SearchFilter',
+        # 'rest_framework.filters.SearchFilter',
     ),
     'SEARCH_PARAM': 'filter[search]',
     'TEST_REQUEST_RENDERER_CLASSES': (
