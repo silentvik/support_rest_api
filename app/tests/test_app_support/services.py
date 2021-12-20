@@ -1,18 +1,15 @@
-# import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.authtoken.models import Token
-
-# from SUPPORT_API.settings import DATABASES
-
-# from django.test import TestCase
-# from rest_framework import status
-# from rest_framework.test import APITestCase
 
 User = get_user_model()
 
 
 class ServiceClass:
+    """
+        This class helps to make complex tests with multiple usertypes and kwargs.
+    """
     USER_TYPE_ARGS_PACK = {
+        # usertype: (is_superuser, is_staff, is_support, forced auth)
         'Admin': (True, True, True, True),
         'Staff': (False, True, True, True),
         'Support': (False, False, True, True),
@@ -23,8 +20,9 @@ class ServiceClass:
     @staticmethod
     def user_creation_generator(create_user_fxt, api_client_fxt, default_username='test1000', **kwargs):
         """
-            generator
-            create users / auth them / return response
+            Generator.
+            create users / auth them (if created).
+            returns: api_client_fixture, user object (if created)
         """
         user_type_args_pack = ServiceClass.USER_TYPE_ARGS_PACK
         for i, key in enumerate(user_type_args_pack.keys()):
@@ -44,15 +42,28 @@ class ServiceClass:
 
     @staticmethod
     def GET_response_generator(url, user_creation_generator, *args, **kwargs):
+        """
+            Generator.
+            Generates GET responces with given url and user_creation_generator
+        """
         for api_client, user in user_creation_generator(*args, **kwargs):
             yield (api_client.get(url), user)
 
     @staticmethod
     def make_responses(response_generator, *args, **kwargs):
+        """
+            Returns a list filled with only results. (Excludes user objects.)
+        """
         return [response for response, _ in response_generator(*args, **kwargs)]
 
     @staticmethod
     def args_responses_generator(key_word, args_list, url, make_responses_func, *args, **kwargs):
+        """
+            Generator.
+            Applies given <key_word> for every arg in <args_list> and adds it to the given <url>.
+            Creates responces pack for every completed url.
+            Returns responces one by one.
+        """
         for j, val in enumerate(args_list):
             new_url = url + f'?{key_word}={val}'
             kwargs['url'] = new_url

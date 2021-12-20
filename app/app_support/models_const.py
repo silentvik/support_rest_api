@@ -6,4 +6,4 @@ TICKET_THEMES = (
         ('4', 'other'),
 )
 
-NAME_OF_TC = 'tickets_collector'
+NAME_OF_TC = 'tcollector'

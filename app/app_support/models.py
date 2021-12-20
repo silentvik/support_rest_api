@@ -1,10 +1,8 @@
-# from datetime import datetime
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
-from django.db.models import Min  # , Max, Q
+from django.db.models import Min
 from django.utils import timezone
-# from django.utils.translation import ugettext_lazy as _
 from django.utils.translation import gettext_lazy as _
 
 from app_support import models_const
@@ -59,7 +57,7 @@ class AppUser(AbstractUser):
     objects = AppUserManager()
 
     class Meta:
-        ordering = ['unanswered_since', 'id']  # , 'is_opened'
+        ordering = ['unanswered_since', 'id']
 
     @property
     def max_not_answered_seconds(self):
@@ -108,13 +106,13 @@ class AppUser(AbstractUser):
         return screen_name+tail
 
 
-def get_current_tc_user_object(username):
+def get_current_tc_user_object():
     """
     returns an user-object,
     which collects all tickets for deleted users.
     """
     user_object = AppUser.objects.get_or_create(
-        username=username
+        username=models_const.NAME_OF_TC
     )[0]
     return user_object
 
@@ -126,7 +124,7 @@ class Ticket(models.Model):
     )
     opened_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.SET(get_current_tc_user_object(models_const.NAME_OF_TC)),
+        on_delete=models.SET(get_current_tc_user_object),
         related_name="tickets",
         related_query_name="ticket",
     )

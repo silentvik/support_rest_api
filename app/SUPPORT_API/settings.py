@@ -16,7 +16,7 @@ from pathlib import Path
 # its needed to run w no docker
 from dotenv import load_dotenv
 
-dotenv_path = path.join(path.dirname(__file__), '.env')
+dotenv_path = path.join(Path(__file__).resolve().parent.parent.parent, '.env.dev')
 load_dotenv(dotenv_path)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.

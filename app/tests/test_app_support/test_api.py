@@ -3,29 +3,26 @@ from django.urls import reverse
 
 from .services import ServiceClass
 
-# import json
-# import requests
-# from django.test import TestCase
-# from rest_framework.test import APITestCase
-# from tests.services import TestMixin
-
 URL_PREFIX = '/api/v1/'
 
 
 @pytest.mark.django_db
 class TestApiGET:
     """
-        Test all urls w get method
+        Test all urls w get method.
+        About result type checks:
+            when the client has permissions to view <list> - result['data'] type will be a <list>;
+            else result['data'] type will be a <dict> with error(s) message or <dict> with some information
     """
 
     def test_unknown_page(self, api_client):
-        for url_postfix in ['asdf/', 'fffffffasss/asfaf/', 'sos/', 'g/g/g/', '///']:
+        for url_postfix in ['asdf/', 'fffffffasss/asfaf/', 'sos/', 'g/g/g/', '///', 'asdf?ПРИВЕТ']:
             url = URL_PREFIX + url_postfix
             response = api_client.get(url)
             assert response.status_code == 404
 
     def test_home_page(self, create_user, api_client):
-        url = reverse('users_list')
+        url = reverse('home_page')
         responses = ServiceClass.make_responses(
             response_generator=ServiceClass.GET_response_generator,
             user_creation_generator=ServiceClass.user_creation_generator,
@@ -37,6 +34,9 @@ class TestApiGET:
             assert response.status_code == 200
 
     def test_users_list_no_args(self, create_user, api_client):
+        """
+            the page opens without specifying arguments. But with different authentication.
+        """
         url = reverse('users_list')
         expected_results = [(list, 200), (list, 200), (list, 200), (dict, 200), (dict, 200)]
 
@@ -53,14 +53,18 @@ class TestApiGET:
             assert type(content['data']) == expected_results[i][0]
 
     def test_users_list_arg_mode(self, create_user, api_client):
+        """
+            test users_list page with arg '?mode='
+        """
         url = reverse('users_list')
         args_list = ['basic', 'expanded', 'default', 'full']
         key_word = 'mode'
 
         expected_results_matrix = [
-            [(list, 200, 4), (list, 200, 7), (list, 200, 10), (list, 200, 20)],  # admin
-            [(list, 200, 4), (list, 200, 7), (list, 200, 10), (list, 200, 20)],  # staff
-            [(list, 200, 4), (list, 200, 7), (type(None), 400, None), (type(None), 400, None)],  # support
+            # [(type of resulting data, response status, count of shown attributes), ...]
+            [(list, 200, 3), (list, 200, 4), (list, 200, 10), (list, 200, 14)],  # admin
+            [(list, 200, 3), (list, 200, 4), (list, 200, 10), (list, 200, 14)],  # staff
+            [(list, 200, 3), (list, 200, 4), (list, 200, 10), (type(None), 400, None)],  # support
             [(dict, 200, None), (dict, 200, None), (dict, 200, None), (dict, 200, None)],  # user
             [(dict, 200, None), (dict, 200, None), (dict, 200, None), (dict, 200, None)],  # anonim
         ]
