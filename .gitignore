@@ -3,7 +3,7 @@ buffer_sqlite/
 requirements1.txt
 debug.log
 app/app_support/trash/
-app/app_support/migrations/
-!app/app_support/migrations/__init__.py
 app/old_Dockerfile
 PROJECT_MAP.ods
+**/__pycache__/
+README.md
