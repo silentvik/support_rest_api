@@ -1,29 +1,25 @@
 # Support REST API
-<b> Custom API for support service. (Pet project) </b>
-<br><br>
-I'm creating this project just to practice.
+<b> Custom support service API. The project is still under development </b>
 <br>
 <br>
-Used:
+<b>Technologies:</b>
 <br>
-[Django]  [django-rest-framework]  [Docker]  [postgresSQL]  [simpleJWT] [PyTest]
+<ul>[Django]  [django-rest-framework]  [Docker]  [postgresSQL]  [simpleJWT] [PyTest]</ul>
 
-<br><br>
-First:
-1. git clone repository
-2. cd support_rest_api
-3. source yourvenv/bin/activate
-4. pip install -r app/requirements.txt
-5. docker-compose up -d --build
-asdf
-  
-<b>Endpoints ("api/v1/")</b> <br>
-    <ul>""</ul>
-        <li>[GET] Info page</li>
-    <ul>"obtainjwt/"</ul>
-        <li>[POST] Obtain token pair.</li>
-    <ul>"refreshjwt/"</ul>
-        <li>[POST] Create new access token.</li>
-    <ul>"users/"</ul>
-        <li>[GET] Create new access token.</li>
-        <li>[POST] Create new access token.</li>
+<b>Requirements:</b>
+<ul>Docker-compose installed</ul>
+
+<b>Usage:</b>
+<ul>1. git clone repository</ul>
+<ul>2. cd support_rest_api</ul>
+<ul>3. docker-compose --env-file ./.env.dev up -d --build web</ul>
+
+<b>Run tests container:</b>
+<ul>docker-compose --env-file ./.env.dev up -d --build web</ul>
+
+<b>Run tests in a web container before django:</b>
+<ul>Configure .env.dev > ENTRYPOINT_RUN_TESTS=1</ul>
+
+<br>
+<b>Endpoints</b> <br>
+<b>"api/v1/"</b>
