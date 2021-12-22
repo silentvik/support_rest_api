@@ -71,7 +71,7 @@ class AppUser(AbstractUser):
         """
         delta = 0
         if self.unanswered_since:
-            delta = (timezone.now() - self.unanswered_since).total_seconds()
+            delta = round((timezone.now() - self.unanswered_since).total_seconds())
         return delta
 
     def save(self, *args, **kwargs):

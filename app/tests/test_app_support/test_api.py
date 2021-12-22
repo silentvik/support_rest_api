@@ -53,7 +53,7 @@ class TestApiGET:
             content = response.json()
             assert type(content['data']) == expected_results[i][0]
 
-    def test_users_list_arg_mode(self, create_user, api_client):
+    def test_users_list_kwarg_mode_complex(self, create_user, api_client):
         """
             test users_list page with arg '?mode='
         """
@@ -89,9 +89,7 @@ class TestApiGET:
             if content_type == list:
                 len_user_attributes = len(content_data[0]['attributes'])
 
-            # status={response.status_code}, len_user_output = {len_user_attributes}')
             res = (content_type, response.status_code, len_user_attributes)
-            print(f'i,j = {i},{j} res = {res}')
             expected_res = expected_results_matrix[i][j]
             assert res == expected_res
 

@@ -29,11 +29,15 @@ User = get_user_model()
 
 
 class UsersListView(generics.ListCreateAPIView, ViewArgsMixin, ViewModesMixin):
-    queryset = User.objects.prefetch_related("tickets").all()
-    # serializer_class will be provided later, depending on mode
     permission_classes = (
         AllowAny,
     )
+    queryset = User.objects.prefetch_related("tickets").all()
+    # serializer_class will be provided later, depending on mode
+
+    filter_backends = [DjangoFilterBackend]
+    filter_fields = ['id', 'is_staff', 'is_superuser', 'is_support', 'opened_tickets_count', 'creation_date']
+
     serializer_modes = {
         'basic': BasicUserListSerializer,
         'expanded': ExpandedUserListSerializer,
@@ -97,13 +101,11 @@ class UserProfileView(generics.RetrieveUpdateDestroyAPIView, ViewArgsMixin, View
         IsIdOwnerOrSupportPlus,
     )
 
-    # defaults:
-    # among these viewing modes, only the administrator can choose
     serializer_modes = {
         'basic': BasicUserListSerializer,  # for support+
         'default': DefaultUserProfileSerializer,  # for user
         'expanded': ExpandedUserProfileSerializer,  # for support+
-        'full': FullUserProfileSerializer,  # for staff+
+        'full': FullUserProfileSerializer,  # (for staff+ ?)
     }
     serializer_mode = 'default'
 
@@ -174,10 +176,10 @@ class TicketsListView(generics.ListCreateAPIView, ViewArgsMixin, ViewModesMixin)
             self.serializer_mode = 'basic'
 
     def filter_queryset(self, queryset):
-        print('***TicketsListView.filter_queryset')
+        # print('***TicketsListView.filter_queryset')
         self.set_valid_kwargs()
         queryset = super().filter_queryset(queryset)
-        print(f'    self.filter_backends = {self.filter_backends}')
+        # print(f'    self.filter_backends = {self.filter_backends}')
         # for backend in list(self.filter_backends):
         #     print(f'    backend = {backend}')
         #     queryset2 = backend().filter_queryset(self.request, queryset, self)

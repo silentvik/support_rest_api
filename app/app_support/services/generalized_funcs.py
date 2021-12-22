@@ -1,11 +1,9 @@
-# from datetime import datetime
-# from dateutil.parser import parse
 from copy import deepcopy
 
 
 def accurate_string_datetime(date):
     """[Summary]
-        Convert datetime to accurate string version.
+        Converts datetime to accurate readable string version.
         Args:
             date ([datetime.datetime])
         Returns:
@@ -25,13 +23,14 @@ def accurate_string_datetime(date):
 
 def accurate_string_seconds(seconds):
     """[Summary]
-        Convert number of seconds to readable string with days/hours.
-        Ignore seconds when number of days > 0, etc.
+        Converts number of seconds to a readable string with days/hours or hours/minutes etc.
+        Ignore seconds when number of days > 0.
         Args:
             seconds ([int])
         Returns:
-            type [string]: [readable time range for human]
+            [str]: readable time range for human
     """
+
     days = seconds // 86400
     seconds -= (days * 86400)
     hours = seconds // 3600
@@ -51,9 +50,10 @@ def accurate_string_seconds(seconds):
 
 def merged(obj_to_expand, expanding_obj):
     """
-        merge two lists
+        merge two lists, returns a new list obj w copied items.
     """
     expanded_obj = deepcopy(obj_to_expand)
+    expanding_obj = deepcopy(expanding_obj)
     for item in expanding_obj:
         if item in expanded_obj:
             expanded_obj.remove(item)
@@ -71,10 +71,10 @@ def popped_dict(dictionary, keys_list):
     return dictionary_copy
 
 
-def find_a_match(subject, collection, default):
-    """
-        [summary]
-            Find an item from collection which is nearest to subject,
+def find_a_match(subject, collection, default_choice):
+    """ it may be deleted
+
+        Find an item from collection which is nearest to subject.
         Args:
             subject ([type]): [str]
             collection ([type]): [iterable tuples of strings like ('2','item')]
@@ -82,7 +82,7 @@ def find_a_match(subject, collection, default):
         Returns:
             [str]: [nearest item[0]]
     """
-    return default
+    return default_choice
 
 
 def extended(obj_to_expand, expanding_obj):
