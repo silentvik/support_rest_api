@@ -25,6 +25,8 @@ if [[ $ENTRYPOINT_MAKE_MIGRATIONS = 1 ]]
 then
     echo "run MAKEMIGRATIONS."
     python manage.py makemigrations;
+else
+    echo "NO MAKEMIGRATIONS.";
 fi
 
 # Выполняем миграции

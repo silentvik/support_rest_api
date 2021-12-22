@@ -15,7 +15,7 @@ First:
 3. source yourvenv/bin/activate
 4. pip install -r app/requirements.txt
 5. docker-compose up -d --build
-
+asdf
   
 <b>Endpoints ("api/v1/")</b> <br>
     <ul>""</ul>

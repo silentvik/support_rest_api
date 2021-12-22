@@ -2,100 +2,77 @@ version: '3.7'
 
 services:
   web:
-    # Берем Dockerfile из каталога app
     build: ./app
-      # context: .
     env_file:
       - .env.dev
-    # Запускаем тестовый сервер
-    # v1 w no tests
     command: python manage.py runserver 0.0.0.0:8000
-    # v2 w tests
-    # command: >
-    #  sh -c "pytest -s --showlocals && python manage.py runserver 0.0.0.0:8000"
-    # command: >
-    #  sh -c "python manage.py wait_for_db &&
-    #         pytest -s --showlocals &&
-    #         python manage.py runserver 0.0.0.0:8000"
-    # Открываем порт 8000 внутри и снаружи 8000
     ports:
       - 8000:8000
-    # куда будут помещены данные из каталога app
     volumes:
       - ./app/:/usr/src/app/
-    
-    # Файл содержащий переменные для контейнера
-    
     depends_on:
       - db
       - redis
       - celery
 
   tests:
-    # Tests from me
+    # All tests here YET.
     build: ./app
     env_file:
       - .env.dev
     command: >
-     sh -c "pytest -s --showlocals"
+      sh -c "pytest -s --showlocals"
     ports:
       - 5555:8000
     volumes:
       - ./app/:/usr/src/app/
-    # try environment here
     environment:
       # - DB_HOST=db  # POSTGRES_HOST from .env
-      - DB_NAME=POSTGRES_DB  # POSTGRES_DB
-      - DB_USER=POSTGRES_USER  # POSTGRES_USER
-      - DB_PASS=POSTGRES_PASSWORD  # POSTGRES_PASSWORD
-    
+      DB_NAME: ${POSTGRES_DB}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASS: ${POSTGRES_PASSWORD}
     depends_on:
       - db
       - redis
       - celery
 
   db:
-    # Образ и версия базы, которую мы будем использовать
     image: postgres:12.0-alpine
+    # Тут можно билдить через кастомный докер-файл,
+    # например context: app/Docker dockerfile: db.Dockerfile
+    # если нужно - добавить .sh скрипт
+
     env_file:
       - .env.dev
-    # Внешний том(volume) и место где он будет подключен внутри контейнера
-    # restart: always  # ?
+    # restart? untill stopped?
     volumes:
       - postgres_volume:/var/lib/postgresql/data/
-    # user: django_user  # ?
     ports:
-      - 5433:5432
-    
+      [5433:5432]
     environment:
-      # Учетные данные, которые можно будет переопределить
-      - POSTGRES_USER=POSTGRES_USER
-      - POSTGRES_PASSWORD=POSTGRES_PASSWORD
-      - POSTGRES_DB=POSTGRES_DB
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+
   redis:
     image: redis:alpine
+
   celery:
     build: ./app
     restart: always
     env_file:
       - .env.dev
-    # build:
-    #   context: .
     command: celery -A SUPPORT_API worker --loglevel=INFO
     volumes:
       - ./app:/app
     environment:
-      - DB_HOST=db  # POSTGRES_HOST from .env
-      - DB_NAME=POSTGRES_DB  # POSTGRES_DB
-      - DB_USER=POSTGRES_USER  # POSTGRES_USER
-      - DB_PASS=POSTGRES_PASSWORD  # POSTGRES_PASSWORD
+      - DB_HOST=db
+      - DB_NAME=${POSTGRES_DB}
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASS=${POSTGRES_PASSWORD}
     depends_on:
       - db
       - redis
-      # - web
-# это таки очень нужно. зачем?
+
 volumes:
-  postgres_volume: 
-# кто-то пишет это:
-# volumes:
-#   pgdata:
+  postgres_volume:
