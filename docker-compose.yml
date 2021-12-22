@@ -16,7 +16,7 @@ services:
       - celery
 
   tests:
-    # All tests here YET.
+    # All tests here so far.
     build: ./app
     env_file:
       - .env.dev
@@ -27,7 +27,6 @@ services:
     volumes:
       - ./app/:/usr/src/app/
     environment:
-      # - DB_HOST=db  # POSTGRES_HOST from .env
       DB_NAME: ${POSTGRES_DB}
       DB_USER: ${POSTGRES_USER}
       DB_PASS: ${POSTGRES_PASSWORD}
@@ -41,10 +40,9 @@ services:
     # Тут можно билдить через кастомный докер-файл,
     # например context: app/Docker dockerfile: db.Dockerfile
     # если нужно - добавить .sh скрипт
-
     env_file:
       - .env.dev
-    # restart? untill stopped?
+    restart: unless-stopped
     volumes:
       - postgres_volume:/var/lib/postgresql/data/
     ports:

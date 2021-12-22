@@ -183,19 +183,45 @@ class Ticket(models.Model):
         user.update_user_fields()  # dont forget to update_user_fields
         return res
 
-    def update_related_ticket_fields(self, message_owner=None):
+    def update_related_ticket_fields(self, message_obj=None):
         """
             This method will mostly called when some Message objects created/deleted.
+            Recalculates related ticket fields:
+                - was current ticket answered after some changes
         """
-        self.messages_count = self.messages.count()
-        if message_owner:
-            if message_owner.id == self.opened_by.id:
+        qrst = self.messages.all().order_by('-id')
+        self.messages_count = qrst.count()
+
+        if message_obj:
+            if message_obj.linked_user.id == self.opened_by.id:
                 self.user_question_date = timezone.now()
                 self.is_answered = False
             else:
                 self.is_answered = True
-                self.answerer_id = message_owner.id
+                self.answerer_id = message_obj.linked_user.id
                 self.user_question_date = None
+        else:
+            # the case when there were frauds with the deletion of messages
+            if self.messages_count == 0:
+                self.is_answered = False
+                self.user_question_date = None
+                self.answerer_id = None
+            else:
+                # rare situations below. Mostly administration (tester's) jokes
+                answerers_messages = qrst.exclude(id=self.opened_by.id)
+                if answerers_messages:
+                    self.answerer_id = answerers_messages[0].id
+                else:
+                    self.answerer_id = None
+
+                last_message = qrst[0]
+                if last_message.linked_user.id == self.opened_by.id:
+                    self.is_answered = False
+                    self.user_question_date = last_message.creation_date
+                else:
+                    self.is_answered = True
+                    self.user_question_date = None
+
         self.save()
 
 
@@ -221,15 +247,16 @@ class Message(models.Model):
         ordering = ['id']
 
     def save(self, *args, **kwargs):
+        print('MESSAGE CREATED')
         res = super().save(*args, **kwargs)  # call the actual save method
-        self.linked_ticket.update_related_ticket_fields(message_owner=self.linked_user)
+        self.linked_ticket.update_related_ticket_fields(message_obj=self)
         return res
 
     def delete(self, *args, **kwargs):
-        ticket, user = self.linked_ticket, self.linked_user
+        ticket = self.linked_ticket
         res = super().delete(*args, **kwargs)
         if ticket:  # If ticket was deleted?
-            ticket.update_related_ticket_fields(message_owner=user)
+            ticket.update_related_ticket_fields()
         return res
 
     def __str__(self):

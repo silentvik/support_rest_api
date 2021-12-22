@@ -6,6 +6,7 @@ from rest_framework.decorators import api_view
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 
+from app_support import celery_tasks
 from app_support.models import Message, Ticket
 from app_support.serializers import (BasicMessageSerializer,
                                      BasicTicketSerializer,
@@ -51,7 +52,7 @@ class UsersListView(generics.ListCreateAPIView, ViewArgsMixin, ViewModesMixin):
         if self.get_current_user_type() not in ['Superuser', 'Staff', 'Support']:
             # Bad experience here.
             # Return infopage here to help users and tell available methods.
-            return Response(views_info.USERS_PAGE_INFO)
+            return Response(views_info.USERS_PAGE_INFO, status=403)
         self.set_valid_kwargs()
         return super().list(request, *args, **kwargs)
 
@@ -82,13 +83,13 @@ class UsersListView(generics.ListCreateAPIView, ViewArgsMixin, ViewModesMixin):
             self.serializer_mode = 'basic'
 
     def get_serializer_class(self):
-        # Call set_serializer_class from ViewModesMixin before super().get_serializer_class()
+        # Call set_serializer_class from ViewModesMixin before super()
         self.set_serializer_class()
         return super().get_serializer_class()
 
 
 class UserProfileView(generics.RetrieveUpdateDestroyAPIView, ViewArgsMixin, ViewModesMixin):
-    queryset = User.objects.all()
+    queryset = User.objects.prefetch_related("tickets").all()
     # serializer_class will be provided later, depending on mode
     permission_classes = (
         IsAuthenticated,
@@ -125,6 +126,17 @@ class UserProfileView(generics.RetrieveUpdateDestroyAPIView, ViewArgsMixin, View
     def get_serializer_class(self):
         self.set_serializer_class()
         return super().get_serializer_class()
+
+    def delete(self, request, *args, **kwargs):
+        """
+            Async delete with response status 202
+        """
+        id_to_delete = self.kwargs['pk']
+        celery_tasks.delete_object(
+            class_name='User',
+            id_to_delete=id_to_delete
+        )
+        return Response(views_info.get_delete_process_msg('user', id_to_delete), status=202)
 
 
 class TicketsListView(generics.ListCreateAPIView, ViewArgsMixin, ViewModesMixin):
@@ -182,8 +194,7 @@ class TicketsListView(generics.ListCreateAPIView, ViewArgsMixin, ViewModesMixin)
         self.set_serializer_class()
         return super().get_serializer_class()
 
-    # def setup(self, request, *args, **kwargs):
-        # perhaps this is the best place to process kwargs?
+    # perhaps setup() is the best place to process all kwargs?
 
 
 class TicketView(generics.RetrieveUpdateDestroyAPIView, ViewArgsMixin, ViewModesMixin):
@@ -221,6 +232,17 @@ class TicketView(generics.RetrieveUpdateDestroyAPIView, ViewArgsMixin, ViewModes
         self.set_serializer_class()
         return super().get_serializer_class()
 
+    def delete(self, request, *args, **kwargs):
+        """
+            Async delete with response status 202
+        """
+        id_to_delete = self.kwargs['ticket_id']
+        celery_tasks.delete_object(
+            class_name='Ticket',
+            id_to_delete=id_to_delete
+        )
+        return Response(views_info.get_delete_process_msg('ticket', id_to_delete), status=202)
+
 
 class MessagesView(generics.ListCreateAPIView):
     serializer_class = BasicMessageSerializer
@@ -251,6 +273,17 @@ class MessageView(generics.RetrieveUpdateDestroyAPIView):
     lookup_url_kwarg = 'message_id'
     queryset = Message.objects.all()
 
+    def delete(self, request, *args, **kwargs):
+        """
+            Async delete with response status 202
+        """
+        id_to_delete = self.kwargs['message_id']
+        celery_tasks.delete_object(
+            class_name='Message',
+            id_to_delete=id_to_delete
+        )
+        return Response(views_info.get_delete_process_msg('message', id_to_delete), status=202)
+
 
 @api_view(['GET', 'POST', 'PATCH', 'PUT', 'DELETE'])
 def error404_view(request, some_path=''):
@@ -263,7 +296,7 @@ def error404_view(request, some_path=''):
         if requested_path in urls_list:
             data += ' Could you have forgotten to add a slash?'
     resp = Response(
-        data=str(data),
+        data={'detail': data},
         status=404
     )
     return resp

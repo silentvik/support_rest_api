@@ -123,6 +123,7 @@ class DefaultTicketSerializer(BasicTicketSerializer):
         method_name='get_readable_date',
         field_name='creation_date',
     )
+    is_answered = serializers.BooleanField(read_only=True)
 
     class Meta(BasicTicketSerializer.Meta):
         fields = merged(BasicTicketSerializer.Meta.fields, [
@@ -156,7 +157,7 @@ class FullTicketSerializer(ExpandedTicketSerializer):
     class Meta:
         model = Ticket
         # repeated for ordering (messages at the end)
-        fields = merged(DefaultTicketSerializer.Meta.fields, [
+        fields = merged(ExpandedTicketSerializer.Meta.fields, [
             'closed_by_id',
             'messages'
             ]

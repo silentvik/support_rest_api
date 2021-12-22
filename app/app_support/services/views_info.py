@@ -1,18 +1,23 @@
 # only simple info here
 
 USERS_PAGE_INFO = {
-    'Allowed methods info': {
+    'Errors': ['Insufficient permissions to display the list of users', ],
+    'Allowed methods': {
         'GET': {
-            'Info page': 'for non-support users',
-            'List of users': 'for support+'
+            'response': 'list of users',
+            'auth': 'support+'
         },
         'POST': {
-            'username': 'required',
-            'password': 'required',
-            'email': 'required',
-            'first_name': 'optional',
-            'last_name': 'optional',
-            'screen_name': 'optional',
+            'response': 'created user object',
+            'auth': 'any',
+            'fields': {
+                'username': 'required',
+                'password': 'required',
+                'email': 'required',
+                'first_name': 'optional',
+                'last_name': 'optional',
+                'screen_name': 'optional',
+            }
         },
     }
 }
@@ -44,3 +49,7 @@ ROOT_PAGE_INFO = {
             'tickets/': 'to view tickets (if have credentials for) or create new',
         }
     }
+
+
+def get_delete_process_msg(obj_name, user_id):
+    return f'The process of deletion the {obj_name} with id {user_id} has been started.'
