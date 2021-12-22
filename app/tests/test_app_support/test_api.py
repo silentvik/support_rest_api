@@ -10,9 +10,10 @@ URL_PREFIX = '/api/v1/'
 class TestApiGET:
     """
         Test all urls w get method.
+        Tests aren't detailed yet.
         About result type checks:
             when the client has permissions to view <list> - result['data'] type will be a <list>;
-            else result['data'] type will be a <dict> with error(s) message or <dict> with some information
+            else result['data'] type will be a <dict> with error(s) message or <dict> with some helpfull information.
     """
 
     def test_unknown_page(self, api_client):
@@ -61,7 +62,7 @@ class TestApiGET:
         key_word = 'mode'
 
         expected_results_matrix = [
-            # [(type of resulting data, response status, count of shown attributes), ...]
+            # every tuple here contain (type of resulting data, response status, count of shown attributes)
             [(list, 200, 3), (list, 200, 4), (list, 200, 10), (list, 200, 14)],  # admin
             [(list, 200, 3), (list, 200, 4), (list, 200, 10), (list, 200, 14)],  # staff
             [(list, 200, 3), (list, 200, 4), (list, 200, 10), (type(None), 400, None)],  # support

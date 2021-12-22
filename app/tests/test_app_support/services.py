@@ -9,7 +9,7 @@ class ServiceClass:
         This class helps to make complex tests with multiple usertypes and kwargs.
     """
     USER_TYPE_ARGS_PACK = {
-        # usertype: (is_superuser, is_staff, is_support, forced auth)
+        # user attributes: (is_superuser, is_staff, is_support, forced auth)
         'Admin': (True, True, True, True),
         'Staff': (False, True, True, True),
         'Support': (False, False, True, True),
