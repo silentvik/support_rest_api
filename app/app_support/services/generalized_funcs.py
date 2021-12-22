@@ -6,10 +6,10 @@ from copy import deepcopy
 def accurate_string_datetime(date):
     """[Summary]
         Convert datetime to accurate string version.
-    Args:
-        date ([datetime.datetime])
-    Returns:
-        [str]
+        Args:
+            date ([datetime.datetime])
+        Returns:
+            [str]
     """
     year = str(date.year)
     month = str(date.month)
@@ -27,10 +27,10 @@ def accurate_string_seconds(seconds):
     """[Summary]
         Convert number of seconds to readable string with days/hours.
         Ignore seconds when number of days > 0, etc.
-    Args:
-        seconds ([int])
-    Returns:
-        [string]: [readable time range for human]
+        Args:
+            seconds ([int])
+        Returns:
+            type [string]: [readable time range for human]
     """
     days = seconds // 86400
     seconds -= (days * 86400)
@@ -75,12 +75,10 @@ def find_a_match(subject, collection, default):
     """
         [summary]
             Find an item from collection which is nearest to subject,
-
         Args:
             subject ([type]): [str]
             collection ([type]): [iterable tuples of strings like ('2','item')]
             default ([type]): [any]
-
         Returns:
             [str]: [nearest item[0]]
     """
@@ -89,7 +87,8 @@ def find_a_match(subject, collection, default):
 
 def extended(obj_to_expand, expanding_obj):
     """
-        return [list]
+        Args: [list] [list]
+        returns extended [list]
     """
     res = list(obj_to_expand)
     res.extend(list(expanding_obj))

@@ -28,6 +28,7 @@ class AppUserManager(BaseUserManager):
     def create_superuser(self, email, password, **extra_fields):
         """
             Create and save a SuperUser with the given email and password.
+            is_support = True by default to get all support-only credentials.
         """
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
@@ -42,6 +43,9 @@ class AppUserManager(BaseUserManager):
 
 
 class AppUser(AbstractUser):
+    """
+        Custom User.
+    """
     email = models.EmailField(_('email address'), unique=True)
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
@@ -61,12 +65,19 @@ class AppUser(AbstractUser):
 
     @property
     def max_not_answered_seconds(self):
+        """
+            Returns ([int]) seconds count left after user's question.
+            Can be usefull for ordering (by support).
+        """
         delta = 0
         if self.unanswered_since:
             delta = (timezone.now() - self.unanswered_since).total_seconds()
         return delta
 
     def save(self, *args, **kwargs):
+        """
+            Also updates last_changes field
+        """
         self.last_changes = timezone.now()
         super().save(*args, **kwargs)  # call the actual save method
 
@@ -74,6 +85,10 @@ class AppUser(AbstractUser):
         return self.get_screen_name()
 
     def update_user_fields(self):
+        """
+            This method will mostly called when some Ticket/Message fields values changed /new created.
+            Recalculates some related AppUser fields as tickets_messages
+        """
         self.tickets_messages = self.messages.count()
         self.current_opened_tickets_count = self.tickets.filter(is_closed=False).count()
         unanswered_since = (
@@ -92,6 +107,10 @@ class AppUser(AbstractUser):
         self.save()
 
     def get_screen_name(self):
+        """
+            Returns User's id if screen_name wasn't set.
+            Add postfix to screen name according User's status.
+        """
         tail = ''
         if self.is_staff:
             tail = ' (admin)'
@@ -112,12 +131,15 @@ def get_current_tc_user_object():
     which collects all tickets for deleted users.
     """
     user_object = AppUser.objects.get_or_create(
-        username=models_const.NAME_OF_TC
+        username=settings.APP_SUPPORT_DEFAULTS['TICKETS_COLLECTOR_NAME']
     )[0]
     return user_object
 
 
 class Ticket(models.Model):
+    """
+        Ticket model will be used to collect messages from users.
+    """
     ticket_theme = models.CharField(
         max_length=255,
         choices=models_const.TICKET_THEMES,
@@ -158,10 +180,13 @@ class Ticket(models.Model):
     def delete(self, *args, **kwargs):
         user = self.opened_by
         res = super().delete(*args, **kwargs)
-        user.update_user_fields()
+        user.update_user_fields()  # dont forget to update_user_fields
         return res
 
     def update_related_ticket_fields(self, message_owner=None):
+        """
+            This method will mostly called when some Message objects created/deleted.
+        """
         self.messages_count = self.messages.count()
         if message_owner:
             if message_owner.id == self.opened_by.id:

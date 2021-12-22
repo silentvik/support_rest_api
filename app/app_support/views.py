@@ -29,6 +29,7 @@ User = get_user_model()
 
 class UsersListView(generics.ListCreateAPIView, ViewArgsMixin, ViewModesMixin):
     queryset = User.objects.prefetch_related("tickets").all()
+    # serializer_class will be provided later, depending on mode
     permission_classes = (
         AllowAny,
     )
@@ -43,12 +44,13 @@ class UsersListView(generics.ListCreateAPIView, ViewArgsMixin, ViewModesMixin):
     list_limit = 10**6
 
     def filter_queryset(self, queryset):
-        print('***UsersListView.filter_queryset')
         queryset = super().filter_queryset(queryset)
         return queryset.order_by(*list(self.list_ordering))[:self.list_limit]
 
     def list(self, request, *args, **kwargs):
         if self.get_current_user_type() not in ['Superuser', 'Staff', 'Support']:
+            # Bad experience here.
+            # Return infopage here to help users and tell available methods.
             return Response(views_info.USERS_PAGE_INFO)
         self.set_valid_kwargs()
         return super().list(request, *args, **kwargs)
@@ -61,6 +63,9 @@ class UsersListView(generics.ListCreateAPIView, ViewArgsMixin, ViewModesMixin):
         self.set_list_ordering()
 
     def set_available_modes(self):
+        """
+            Set available modes depending on usertype (status).
+        """
         usertype = self.get_current_user_type()
         if usertype in ['Support']:
             self.serializer_modes = popped_dict(self.serializer_modes, ['full'])
@@ -68,19 +73,23 @@ class UsersListView(generics.ListCreateAPIView, ViewArgsMixin, ViewModesMixin):
             self.serializer_modes = popped_dict(self.serializer_modes, [''])
 
     def set_default_mode(self):
+        """
+            Set default mode depending on usertype (status).
+        """
         if self.request.method == 'POST':
             self.serializer_mode = 'default'
         else:
             self.serializer_mode = 'basic'
 
     def get_serializer_class(self):
+        # Call set_serializer_class from ViewModesMixin before super().get_serializer_class()
         self.set_serializer_class()
         return super().get_serializer_class()
 
 
 class UserProfileView(generics.RetrieveUpdateDestroyAPIView, ViewArgsMixin, ViewModesMixin):
     queryset = User.objects.all()
-    # serializer_class = DefaultUserProfileSerializer
+    # serializer_class will be provided later, depending on mode
     permission_classes = (
         IsAuthenticated,
         # IsIdOwnerOrSuperUser,
@@ -119,7 +128,7 @@ class UserProfileView(generics.RetrieveUpdateDestroyAPIView, ViewArgsMixin, View
 
 
 class TicketsListView(generics.ListCreateAPIView, ViewArgsMixin, ViewModesMixin):
-
+    # serializer_class will be provided later, depending on mode
     permission_classes = (
         IsAuthenticated,
         IsIdOwnerOrSupportPlus,
@@ -178,9 +187,9 @@ class TicketsListView(generics.ListCreateAPIView, ViewArgsMixin, ViewModesMixin)
 
 
 class TicketView(generics.RetrieveUpdateDestroyAPIView, ViewArgsMixin, ViewModesMixin):
-    # serializer_class = DefaultTicketSerializer
     queryset = Ticket.objects.all()
-    restricted_class = Ticket
+    # serializer_class will be provided later, depending on mode
+    restricted_class = Ticket  # used in IsItemOwnerOrSupportPlus
     permission_classes = (
         IsAuthenticated,
         MethodsPermissions,
@@ -261,6 +270,6 @@ def error404_view(request, some_path=''):
 
 
 @api_view(['GET'])
-def BasicPageInfoView(request, **kwargs):
+def home_page_info_view(request, **kwargs):
     resp = views_info.ROOT_PAGE_INFO
     return Response(resp, status=200)

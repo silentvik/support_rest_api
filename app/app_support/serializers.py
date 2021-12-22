@@ -1,7 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ValidationError
-# from django.utils import timezone
 from rest_framework import serializers
 
 from app_support import serializers_fields
@@ -10,9 +9,6 @@ from app_support.models_const import TICKET_THEMES
 from app_support.serializers_mixins import SerializerAdditionalMethodsMixin
 from app_support.services.generalized_funcs import find_a_match, merged
 
-# from rest_framework.decorators import permission_classes
-# from datetime import datetime, timedelta
-# from django.utils import timezone
 User = get_user_model()
 
 

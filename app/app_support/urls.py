@@ -7,7 +7,7 @@ from rest_framework_simplejwt.views import (TokenObtainPairView,
 from app_support import views
 
 urlpatterns = [
-    path('', views.BasicPageInfoView, name='home_page'),
+    path('', views.home_page_info_view, name='home_page'),
     path('obtainjwt/', TokenObtainPairView.as_view(), name='obtain_token'),  # simpleJWT
     path('refreshjwt/', TokenRefreshView.as_view(), name='refresh_token'),  # simpleJWT
     path('users/', views.UsersListView.as_view(), name='users_list'),

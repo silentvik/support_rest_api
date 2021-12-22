@@ -2,8 +2,18 @@ from rest_framework import exceptions
 
 
 class ViewModesMixin:
+    """
+        Help w modes mechanics.
+        Client can choose a view mode.
+        Modes can be usefull, when support-authenticated user wants to view larger tickets list on a page,
+        with no unnesessary information included.
+    """
+
     def set_serializer_mode(self):
-        # set mode works only w GET request yet
+        """
+            If mode arg given and in available choices - set it to self.serializer_mode.
+            Can raise error with helpful message.
+        """
         mode = self.request.GET.get('mode', None)
         if mode:
             if mode in self.serializer_modes.keys():
@@ -17,6 +27,9 @@ class ViewModesMixin:
                 )
 
     def set_serializer_class(self):
+        """
+            Calls a row of set-mode methods and set default serializer class.
+        """
         if not self.serializer_class:
             self.set_default_mode()
             self.set_available_modes()
@@ -24,6 +37,10 @@ class ViewModesMixin:
             self.serializer_class = self.serializer_modes[self.serializer_mode]
 
     def get_current_user_type(self):
+        """
+            Returns simple readable user's status for current User object.
+            Can be used if developer don't want to ask self.request.user.is_superuser everytime.
+        """
         user = self.request.user
         if user.id is None:
             return 'Anonimous'
@@ -37,6 +54,10 @@ class ViewModesMixin:
 
 
 class ViewArgsMixin:
+    """
+        This mixin helps to provide custom URL args (kwargs).
+        Contain methods which can be used in every view.
+    """
     default_queryset_filter_limit = 100*3
 
     def set_as_pk_in_kwargs(self, obj_to_set):
@@ -67,7 +88,6 @@ class ViewArgsMixin:
         order_kwarg = self.request.GET.get('order', None)
         if order_kwarg:
             self.list_ordering = self.choice_arg_validator(order_kwarg, self.list_ordering)
-            # print(f'self.list_ordering = {self.list_ordering}')
 
     def choice_arg_validator(self, kwarg_value, valid_choices):
         positive_kwarg_value = kwarg_value
@@ -84,6 +104,9 @@ class ViewArgsMixin:
         )
 
     def set_valid_kwargs(self):
+        """
+            Call all set_kwarg methods.
+        """
         self.set_asked_user_id()
         self.set_list_limit()
         self.set_list_ordering()

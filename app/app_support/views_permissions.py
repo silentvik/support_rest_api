@@ -12,7 +12,8 @@ class IsIdOwnerOrSupportPlus(BasePermission):
         """
             Return `True` if permission is granted, `False` otherwise.
             Raise ObjectDoesNotExist error if requested user does not exist.
-            If client asked user/.. by id - has_permission is working
+            If client asked user by id - has_permission is working.
+            Can raise error with helpful message.
         """
 
         if request.method == 'POST':
@@ -55,15 +56,22 @@ class IsItemOwnerOrSupportPlus(BasePermission):
     def has_permission(self, request, view):
         """
             Return `True` if permission is granted, raise an exception otherwise.
+            self.restricted_class must be set.
+            restricted_class - Ticket in support_app.
+            User can't view tickets owned by another users.
+            Can raise error with helpful message.
         """
 
         asked_ticket_id = request.parser_context["kwargs"].get('ticket_id', None)
         restricted_class = view.restricted_class
+
         try:
             asked_ticket_id = int(asked_ticket_id)
             ticket = restricted_class.objects.get(id=asked_ticket_id)
+
         except ObjectDoesNotExist:
             raise exceptions.NotFound('Ticket with this id does not exist')
+
         except ValueError:
             raise exceptions.ValidationError(
                 f'Can not handle ticket_id({asked_ticket_id}). Please enter a valid ticket_id.'
@@ -83,6 +91,12 @@ class IsItemOwnerOrSupportPlus(BasePermission):
 class MethodsPermissions(BasePermission):
 
     def has_permission(self, request, view):
+        """
+            Return `True` if permission is granted, raise an exception otherwise.
+            Users with support status can't detele tickets, staff+ can.
+            Users can't 'patch' tickets, but can view.
+            Can raise error with helpful message.
+        """
         user = request.user
         if user.is_staff or user.is_superuser:
             return True

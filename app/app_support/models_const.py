@@ -5,5 +5,3 @@ TICKET_THEMES = (
         ('3', 'security'),
         ('4', 'other'),
 )
-
-NAME_OF_TC = 'tcollector'
