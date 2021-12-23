@@ -1,5 +1,5 @@
 # Support REST API
-This is an example of how I perform a company task (internship).<br>
+<b> Custom support service api.</b><br>
 Task details: BUSINESSTASK.md
 <br>
 <br>
