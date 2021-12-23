@@ -36,7 +36,7 @@ class UsersListView(generics.ListCreateAPIView, ViewArgsMixin, ViewModesMixin):
     # serializer_class will be provided later, depending on mode
 
     filter_backends = [DjangoFilterBackend]
-    filter_fields = ['id', 'is_staff', 'is_superuser', 'is_support', 'opened_tickets_count', 'creation_date']
+    filter_fields = ['id', 'is_staff', 'is_superuser', 'is_support', 'opened_tickets_count']
 
     serializer_modes = {
         'basic': BasicUserListSerializer,
