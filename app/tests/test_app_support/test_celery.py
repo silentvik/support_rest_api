@@ -16,11 +16,16 @@ class TestCelery(TestMixin):
     wait_for_celery_sec = 0.5
 
     def test_celery_is_working(self):
+        """
+            Creates and deletes a given number (manipulated_items_count) of User instances.
+        """
+
         starting_users_count = User.objects.count()
         self.create_tmp_users(self.manipulated_items_count, celery_task=create_user_test)
         sleep(self.wait_for_celery_sec)
         assert User.objects.count() == starting_users_count + self.manipulated_items_count
         assert len(self.users) == self.manipulated_items_count
+
         self.delete_tmp_users(celery_task=delete_user_test)
         sleep(self.wait_for_celery_sec)
         assert User.objects.count() == starting_users_count

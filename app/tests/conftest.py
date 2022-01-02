@@ -7,6 +7,10 @@ User = get_user_model()
 
 
 def pytest_runtest_protocol(item, nextitem):
+    """
+        Makes reports more readable.
+    """
+
     reports = runtestprotocol(item, nextitem=nextitem)
     for report in reports:
         if report.when == 'call':
@@ -29,6 +33,10 @@ def django_db_setup():
 
 @pytest.fixture
 def create_user():
+    """
+        Creates User instance with given kwargs.
+    """
+
     def make_user(**kwargs):
         username = kwargs.get('username', None)
         if not username:

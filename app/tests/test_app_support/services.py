@@ -8,6 +8,7 @@ class ServiceClass:
     """
         This class helps to make complex tests with multiple usertypes and kwargs.
     """
+
     USER_TYPE_ARGS_PACK = {
         # user attributes: (is_superuser, is_staff, is_support, forced auth)
         'Admin': (True, True, True, True),
@@ -24,6 +25,7 @@ class ServiceClass:
             create users / auth them (if created).
             returns: api_client_fixture, user object (if created)
         """
+
         user_type_args_pack = ServiceClass.USER_TYPE_ARGS_PACK
         for i, key in enumerate(user_type_args_pack.keys()):
             args_pack = user_type_args_pack[key]
@@ -46,6 +48,7 @@ class ServiceClass:
             Generator.
             Generates GET responces with given url and user_creation_generator
         """
+
         for api_client, user in user_creation_generator(*args, **kwargs):
             yield (api_client.get(url), user)
 
@@ -54,6 +57,7 @@ class ServiceClass:
         """
             Returns a list filled with only results. (Excludes user objects.)
         """
+
         return [response for response, _ in response_generator(*args, **kwargs)]
 
     @staticmethod
@@ -64,6 +68,7 @@ class ServiceClass:
             Creates responces pack for every completed url.
             Returns responces one by one.
         """
+
         for j, val in enumerate(args_list):
             new_url = url + f'?{key_word}={val}'
             kwargs['url'] = new_url
@@ -79,12 +84,20 @@ def create_token(user):
 
 
 class TestMixin:
+    """
+        An optional mixin to check whether the database is working in principle.
+    """
+
     default_username = 'test'
     default_password = 'testtest'
     default_email = '@aa.aa'
     users = {}
 
     def create_tmp_users(self, count_to_create=3, celery_task=None):
+        """
+            Creates a given count of users, if celery_task - will use Celery.
+        """
+
         total_written = 0
         queryset = User.objects.all()
         ln = len(queryset)
@@ -110,6 +123,10 @@ class TestMixin:
                     break
 
     def delete_tmp_users(self, celery_task=None):
+        """
+            Creates a given count of users, if celery_task - will use Celery.
+        """
+
         users = self.users
         for key in users.keys():
             username = users[key]['username']

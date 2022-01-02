@@ -36,8 +36,9 @@ class TestApiGET:
 
     def test_users_list_no_args(self, create_user, api_client):
         """
-            the page opens without specifying arguments. But with different authentication.
+            The page opens without specifying arguments. But with different authentication.
         """
+
         url = reverse('users_list')
         expected_results = [(list, 200), (list, 200), (list, 200), (dict, 200), (dict, 200)]
 
@@ -55,8 +56,9 @@ class TestApiGET:
 
     def test_users_list_kwarg_mode_complex(self, create_user, api_client):
         """
-            test users_list page with arg '?mode='
+            Test users_list page with arg '?mode='
         """
+
         url = reverse('users_list')
         args_list = ['basic', 'expanded', 'default', 'full']
         key_word = 'mode'
