@@ -19,7 +19,6 @@ RUN apk add --update --no-cache --virtual .tmp-build-deps \
 RUN pip install --upgrade pip
 COPY ./requirements.txt .
 
-# какой-то умный человек сказал так лучше всего:
 RUN PYTHONPATH=/usr/bin/python pip install -r requirements.txt
 
 # **подчищаем ненужное, минимизируя вес докеров
