@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.urls import get_resolver
 from django_filters.rest_framework.backends import DjangoFilterBackend
-from rest_framework import generics
+from rest_framework import generics, status
 from rest_framework.decorators import api_view
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
@@ -76,7 +76,7 @@ class UsersListView(generics.ListCreateAPIView, ViewArgsMixin, ViewModesMixin):
         if self.get_current_user_type() not in ['Superuser', 'Staff', 'Support']:
             # Bad experience here.
             # Return infopage here to help users and tell available methods.
-            return Response(views_info.USERS_PAGE_INFO, status=403)
+            return Response(views_info.USERS_PAGE_INFO, status=status.HTTP_403_FORBIDDEN)
 
         self.set_valid_kwargs()
         return super().list(request, *args, **kwargs)
@@ -194,7 +194,7 @@ class UserProfileView(generics.RetrieveUpdateDestroyAPIView, ViewArgsMixin, View
             class_name='User',
             id_to_delete=id_to_delete
         )
-        return Response(views_info.get_delete_process_msg('user', id_to_delete), status=202)
+        return Response(views_info.get_delete_process_msg('user', id_to_delete), status=status.HTTP_202_ACCEPTED)
 
 
 class TicketsListView(generics.ListCreateAPIView, ViewArgsMixin, ViewModesMixin):
@@ -327,7 +327,7 @@ class TicketView(generics.RetrieveUpdateDestroyAPIView, ViewArgsMixin, ViewModes
             class_name='Ticket',
             id_to_delete=id_to_delete
         )
-        return Response(views_info.get_delete_process_msg('ticket', id_to_delete), status=202)
+        return Response(views_info.get_delete_process_msg('ticket', id_to_delete), status=status.HTTP_202_ACCEPTED)
 
 
 class MessagesView(generics.ListCreateAPIView):
@@ -381,7 +381,7 @@ class MessageView(generics.RetrieveUpdateDestroyAPIView):
             class_name='Message',
             id_to_delete=id_to_delete
         )
-        return Response(views_info.get_delete_process_msg('message', id_to_delete), status=202)
+        return Response(views_info.get_delete_process_msg('message', id_to_delete), status=status.HTTP_202_ACCEPTED)
 
 
 @api_view(['GET', 'POST', 'PATCH', 'PUT', 'DELETE'])
@@ -410,4 +410,4 @@ def error404_view(request, some_path=''):
 @api_view(['GET'])
 def home_page_info_view(request, **kwargs):
     resp = views_info.ROOT_PAGE_INFO
-    return Response(resp, status=200)
+    return Response(resp, status=status.HTTP_200_OK)
