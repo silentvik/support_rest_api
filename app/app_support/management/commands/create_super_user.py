@@ -6,6 +6,10 @@ User = get_user_model()
 
 
 class Command(createsuperuser.Command):
+    """
+        Using this command, you can set a password when creating a superuser in one line
+    """
+
     help = 'Create a superuser, and allow password to be provided.'
 
     def add_arguments(self, parser):
@@ -16,6 +20,10 @@ class Command(createsuperuser.Command):
         )
 
     def handle(self, *args, **kwargs):
+        """
+            Kwargs processing. Takes the necessary data from the input.
+        """
+
         password = kwargs.get('password')
         username = kwargs.get('username')
         email = kwargs.get('email')

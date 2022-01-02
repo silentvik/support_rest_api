@@ -2,25 +2,24 @@
 
 if [ "$DATABASE" = "postgres" ]
 then
-    # если база еще не запущена
-    echo "############################################ check DB"
+    echo "# check DB"
 
-    # Проверяем доступность хоста и порта
+    # Check the availability of the host and port
     while ! nc -z $POSTGRES_HOST $POSTGRES_PORT; do
       sleep 0.1
     done
 
-    echo "############################################ DB = postgres. ok."
+    echo "# DB = postgres. All is ok."
 fi
 
-# Если надо удаляем все старые данные
+# If necessary, delete all the old data
 if [[ $ENTRYPOINT_FLUSH_DB = 1 ]]
 then 
     echo "run FLUSH DB."
     python manage.py flush --no-input
 fi
 
-# Если миграции не были сделаны
+# If migrations have not been made and chosen in .env.dev
 if [[ $ENTRYPOINT_MAKE_MIGRATIONS = 1 ]]
 then
     echo "run MAKEMIGRATIONS."
@@ -29,10 +28,11 @@ else
     echo "NO MAKEMIGRATIONS.";
 fi
 
-# Выполняем миграции
+# Performing migrations
 echo "run MIGRATE."
 python manage.py migrate
 
+# Another options from .env.dev
 if [ $DJANGO_SUPERUSER_USERNAME ] && [ $DJANGO_SUPERUSER_EMAIL ] && [ $DJANGO_SUPERUSER_PASSWORD ]
 then
   printenv | grep DJANGO_SUPERUSER_USERNAME
@@ -53,7 +53,7 @@ else
     echo "default TICKETS_COLLECTOR wasnt set"
 fi
 
-# if want to run pytest here
+# If there is a desire to run tests right here
 if [[ $ENTRYPOINT_RUN_TESTS = 1 ]]
 then
     printenv | grep ENTRYPOINT_RUN_TESTS

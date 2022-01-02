@@ -15,7 +15,7 @@ class AppUserManager(BaseUserManager):
     """
     def create_user(self, email, password, **extra_fields):
         """
-        Create and save a User with the given email and password.
+            Create and save a User with the given email and password.
         """
         if not email:
             raise ValueError(_('The Email must be set'))
@@ -45,7 +45,9 @@ class AppUserManager(BaseUserManager):
 class AppUser(AbstractUser):
     """
         Custom User.
+        Contains the necessary fields and methods for statistics.
     """
+
     email = models.EmailField(_('email address'), unique=True)
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
@@ -69,6 +71,7 @@ class AppUser(AbstractUser):
             Returns ([int]) seconds count left after user's question.
             Can be usefull for ordering (by support).
         """
+
         delta = 0
         if self.unanswered_since:
             delta = round((timezone.now() - self.unanswered_since).total_seconds())
@@ -78,6 +81,7 @@ class AppUser(AbstractUser):
         """
             Also updates last_changes field
         """
+
         self.last_changes = timezone.now()
         super().save(*args, **kwargs)  # call the actual save method
 
@@ -89,6 +93,7 @@ class AppUser(AbstractUser):
             This method will mostly called when some Ticket/Message fields values changed /new created.
             Recalculates some related AppUser fields as tickets_messages
         """
+
         self.tickets_messages = self.messages.count()
         self.current_opened_tickets_count = self.tickets.filter(is_closed=False).count()
         unanswered_since = (
@@ -111,6 +116,7 @@ class AppUser(AbstractUser):
             Returns User's id if screen_name wasn't set.
             Add postfix to screen name according User's status.
         """
+
         tail = ''
         if self.is_staff:
             tail = ' (admin)'
@@ -127,9 +133,10 @@ class AppUser(AbstractUser):
 
 def get_current_tc_user_object():
     """
-    returns an user-object,
-    which collects all tickets for deleted users.
+        Returns an user-object,
+        which collects all tickets for deleted users.
     """
+
     user_object = AppUser.objects.get_or_create(
         username=settings.APP_SUPPORT_DEFAULTS['TICKETS_COLLECTOR_NAME']
     )[0]
@@ -140,6 +147,7 @@ class Ticket(models.Model):
     """
         Ticket model will be used to collect messages from users.
     """
+
     ticket_theme = models.CharField(
         max_length=255,
         choices=models_const.TICKET_THEMES,
@@ -164,20 +172,33 @@ class Ticket(models.Model):
     messages_count = models.PositiveIntegerField(default=0, editable=False)
 
     class Meta:
-        ordering = ['id', 'ticket_theme', 'user_question_date', 'last_changes', 'is_answered']  # , 'is_opened'
+        ordering = ['id', 'ticket_theme', 'user_question_date', 'last_changes', 'is_answered']
 
     @property
     def not_answered_time(self):
+        """
+            Returns [int] seconds without response.
+        """
+
         if self.is_answered is False and self.user_question_date:
             return int((timezone.now() - self.user_question_date).total_seconds())
         return 0
 
     def save(self, *args, **kwargs):
-        self.last_changes = timezone.now()  # update 'last_update' field
+        """
+            Changes last_changes field value before call super.save().
+            After calling the default method, edits and saves the dependent User fields.
+        """
+
+        self.last_changes = timezone.now()  # update 'last_update' field before saving
         super().save(*args, **kwargs)  # call the actual save method
         self.opened_by.update_user_fields()
 
     def delete(self, *args, **kwargs):
+        """
+            After calling the default method, edits and saves the dependent User fields.
+        """
+
         user = self.opened_by
         res = super().delete(*args, **kwargs)
         user.update_user_fields()  # dont forget to update_user_fields
@@ -189,6 +210,7 @@ class Ticket(models.Model):
             Recalculates related ticket fields:
                 - was current ticket answered after some changes
         """
+
         qrst = self.messages.all().order_by('-id')
         self.messages_count = qrst.count()
 
@@ -226,8 +248,12 @@ class Ticket(models.Model):
 
 
 class Message(models.Model):
-    related_class = Ticket
+    """
+        Every ticket (class Ticket), contains messages.
+        This model contains the necessary fields and methods.
+    """
 
+    related_class = Ticket
     linked_ticket = models.ForeignKey(
         related_class,
         on_delete=models.CASCADE,
@@ -247,12 +273,19 @@ class Message(models.Model):
         ordering = ['id']
 
     def save(self, *args, **kwargs):
-        print('MESSAGE CREATED')
+        """
+            After calling the default method, edits and saves the dependent Ticket fields.
+        """
+
         res = super().save(*args, **kwargs)  # call the actual save method
         self.linked_ticket.update_related_ticket_fields(message_obj=self)
         return res
 
     def delete(self, *args, **kwargs):
+        """
+            After calling the default method, edits and saves the dependent Ticket fields.
+        """
+
         ticket = self.linked_ticket
         res = super().delete(*args, **kwargs)
         if ticket:  # If ticket was deleted?

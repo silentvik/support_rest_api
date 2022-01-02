@@ -97,6 +97,7 @@ class MethodsPermissions(BasePermission):
             Users can't 'patch' tickets, but can view.
             Can raise error with helpful message.
         """
+
         user = request.user
         if user.is_staff or user.is_superuser:
             return True

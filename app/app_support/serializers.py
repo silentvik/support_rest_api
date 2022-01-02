@@ -30,6 +30,10 @@ class BasicMessageSerializer(serializers.ModelSerializer, SerializerAdditionalMe
         ]
 
     def create(self, validated_data):
+        """
+            Сreates a new instance of the MESSAGE, adds the necessary field values.
+        """
+
         user_obj = self.context.get('request', None).user
         ticket_number = self.context.get('ticket_id', None)
         ticket_obj = Ticket.objects.get(id=ticket_number)
@@ -39,6 +43,10 @@ class BasicMessageSerializer(serializers.ModelSerializer, SerializerAdditionalMe
 
 
 class BasicTicketSerializer(serializers.ModelSerializer, SerializerAdditionalMethodsMixin):
+    """
+        Contains the most necessary fields and methods for processing the Ticket instance.
+    """
+
     message = serializers.CharField(write_only=True, default='')
     ticket_theme = serializers_fields.AppChoiceField(choices=TICKET_THEMES)
     is_closed = serializers.BooleanField(default=False)
@@ -59,8 +67,9 @@ class BasicTicketSerializer(serializers.ModelSerializer, SerializerAdditionalMet
 
     def create(self, validated_data):
         """
-            Create new Ticket and related Message instance
+            Creates a new Ticket and related Message instances
         """
+
         user = self.context.get('request', None).user
         validated_data['opened_by'] = user
         if validated_data.get('is_closed', None):
@@ -71,13 +80,18 @@ class BasicTicketSerializer(serializers.ModelSerializer, SerializerAdditionalMet
 
     def update(self, instance, validated_data):
         """
-            custom updating with message field involved and closed_by_id field processing
+            Custom updating with message field involved and closed_by_id field processing
         """
+
         self.process_closed_by_id_data(instance, validated_data)
         self.process_message_field(instance, validated_data)
         return super().update(instance, validated_data)
 
     def process_closed_by_id_data(self, instance, validated_data):
+        """
+            Adds a person who closed a ticket (if the ticket was closed)
+        """
+
         user = self.context.get('request', None).user
         new_is_closed = validated_data.get('is_closed', None)
         old_is_closed = instance.is_closed
@@ -88,6 +102,10 @@ class BasicTicketSerializer(serializers.ModelSerializer, SerializerAdditionalMet
                 validated_data['closed_by_id'] = None
 
     def process_message_field(self, instance, validated_data):
+        """
+            Creates a message, if one has been entered.
+        """
+
         message_data = validated_data.get('message', '')
         if message_data != '':
             Message.objects.create(
@@ -97,6 +115,11 @@ class BasicTicketSerializer(serializers.ModelSerializer, SerializerAdditionalMet
             )
 
     def validate_ticket_theme(self, data):
+        """
+            The selection can be entered manually with errors,
+            calls a function that makes a suitable choice depending on the request
+        """
+
         new_data = find_a_match(
             subject=data,
             collection=TICKET_THEMES,
@@ -105,7 +128,13 @@ class BasicTicketSerializer(serializers.ModelSerializer, SerializerAdditionalMet
         return new_data
 
     def validate_message(self, message_data):
+        """
+            Message validator. Checks the message body only if there was an attempt to create a ticket
+        """
+
         request_method = self.context.get('request', None).META['REQUEST_METHOD']
+
+        # The message must be entered when creating a new ticket.
         if request_method == 'POST':
             if message_data == '':
                 raise ValidationError('<message> field can not be blank when create new ticket.')
@@ -113,6 +142,10 @@ class BasicTicketSerializer(serializers.ModelSerializer, SerializerAdditionalMet
 
 
 class DefaultTicketSerializer(BasicTicketSerializer):
+    """
+        Contains more fields than BasicTicketSerializer
+    """
+
     opened_by_id = serializers.IntegerField(source='opened_by.id', read_only=True)
     screen_name = serializers.CharField(source='opened_by.get_screen_name', read_only=True)
     last_changes = serializers_fields.SerializerMethodKwargsField(
@@ -137,6 +170,10 @@ class DefaultTicketSerializer(BasicTicketSerializer):
 
 
 class ExpandedTicketSerializer(DefaultTicketSerializer):
+    """
+        Contains more fields than DefaultTicketSerializer. Designed for use by support.
+    """
+
     messages = BasicMessageSerializer(many=True, read_only=True)
     user_question_date = serializers_fields.SerializerMethodKwargsField(
         method_name='get_readable_date',
@@ -154,6 +191,10 @@ class ExpandedTicketSerializer(DefaultTicketSerializer):
 
 
 class FullTicketSerializer(ExpandedTicketSerializer):
+    """
+        Contains all Ticket fields (mandatory and optional).
+    """
+
     class Meta:
         model = Ticket
         # repeated for ordering (messages at the end)
@@ -165,6 +206,10 @@ class FullTicketSerializer(ExpandedTicketSerializer):
 
 
 class BaseUserSerializer(serializers.ModelSerializer, SerializerAdditionalMethodsMixin):
+    """
+        Basic user serializer with the most nessessary fields only.
+    """
+
     username = serializers.CharField(write_only=True)
     password = serializers.CharField(min_length=8, max_length=250, write_only=True)
     email = serializers.EmailField(write_only=True)
@@ -182,6 +227,7 @@ class BaseUserSerializer(serializers.ModelSerializer, SerializerAdditionalMethod
             password_str: password of a user [str]
             return: a hashed version of the password
         """
+
         username_data = self.initial_data.get('username', '')
         email_data = self.initial_data.get('email', '')
         if '' not in [password_data, username_data, email_data]:
@@ -194,6 +240,10 @@ class BaseUserSerializer(serializers.ModelSerializer, SerializerAdditionalMethod
 
 
 class BasicUserListSerializer(BaseUserSerializer):
+    """
+        Serializes the User model. Designed to view the list of Users.
+    """
+
     screen_name = serializers.CharField(source='get_screen_name', read_only=True)
     max_no_response_time = serializers_fields.SerializerMethodKwargsField(
         method_name='readable_time_seconds',
@@ -212,6 +262,11 @@ class BasicUserListSerializer(BaseUserSerializer):
 
 
 class ExpandedUserListSerializer(BasicUserListSerializer):
+    """
+        Serializes the User model.
+        Designed to view the list of Users with their tickets (for the convenience of support workers).
+    """
+
     tickets = BasicTicketSerializer(many=True, read_only=True)
 
     class Meta(BasicUserListSerializer.Meta):
@@ -255,6 +310,7 @@ class DefaultUserProfileSerializer(serializers.ModelSerializer, SerializerAdditi
             password_str: password of a user [str]
             return: a hashed version of the password
         """
+
         username_data = self.initial_data.get('username', '')
         email_data = self.initial_data.get('email', '')
         if '' not in [password_data, username_data, email_data]:
@@ -266,6 +322,10 @@ class DefaultUserProfileSerializer(serializers.ModelSerializer, SerializerAdditi
 
 
 class ExpandedUserProfileSerializer(DefaultUserProfileSerializer):
+    """
+        Expanded serializer for view (or change) user's profiles by staff.
+    """
+
     tickets = BasicTicketSerializer(many=True, read_only=True)
     max_no_response_time = serializers_fields.SerializerMethodKwargsField(
         method_name='readable_time_seconds',
@@ -282,6 +342,9 @@ class ExpandedUserProfileSerializer(DefaultUserProfileSerializer):
 
 
 class FullUserProfileSerializer(ExpandedUserProfileSerializer):
+    """
+        Wider than ExpandedUserProfileSerializer.
+    """
     class Meta(ExpandedUserProfileSerializer.Meta):
         fields = merged(ExpandedUserProfileSerializer.Meta.fields, [
             'tickets'

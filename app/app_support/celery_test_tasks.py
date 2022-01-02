@@ -1,9 +1,11 @@
+"""
+    CELERY tasks for tests only
+"""
+
 from celery import shared_task
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
-
-# CELERY tasks for tests only
 
 
 @shared_task

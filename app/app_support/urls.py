@@ -25,5 +25,7 @@ urlpatterns = [
     path('tickets/my/', views.TicketsListView.as_view(), {'user_id': 0}, name='tickets_list_owner'),
     path('<path:some_path>', views.error404_view, name='unknown_page'),
 ]
-# handler404 = views.error404_view
+
+# handler404 can be used for viewing views.error404_view
+
 urlpatterns = format_suffix_patterns(urlpatterns)

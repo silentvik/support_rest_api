@@ -50,7 +50,7 @@ def accurate_string_seconds(seconds):
 
 def merged(obj_to_expand, expanding_obj):
     """
-        merge two lists, returns a new list obj w copied items.
+        Combines two lists, returns a new list obj w copied items.
     """
     expanded_obj = deepcopy(obj_to_expand)
     expanding_obj = deepcopy(expanding_obj)

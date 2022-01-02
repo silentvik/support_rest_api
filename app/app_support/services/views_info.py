@@ -52,4 +52,8 @@ ROOT_PAGE_INFO = {
 
 
 def get_delete_process_msg(obj_name, user_id):
+    """
+        Returns a message that can be used in delayed object deletion.
+        Returns [str].
+    """
     return f'The process of deletion the {obj_name} with id {user_id} has been started.'
